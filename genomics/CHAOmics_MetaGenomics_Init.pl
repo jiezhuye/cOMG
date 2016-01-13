@@ -66,7 +66,7 @@ my $bin = "$Bin/bin";
 #my $s_filter = "$bin/filterReads.pl";
 my $s_clean  = "$bin/readsCleaning.pl";
 my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl";
-my $s_soap   = "$bin/soap2BuildAbudance.dev.pl";
+my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
 # public database prefix
 my $s_db     = "/nas/RD_09C/resequencing/resequencing/tmp/pub/Genome/Human/human.fa.index";
 # project results directiory structure
@@ -109,7 +109,8 @@ while (<IN>){
 foreach my $sam (keys %SAM){
 	my @fqs = sort keys %{$SAM{$sam}};
 	die "$sam got more than 2 fq files, pls check it out!" if @fqs > 2;
-	my ($fq1,$fq2) = ($SAM{$sam}{$fqs[0]}, $SAM{$sam}{$fqs[1]});
+	my $fq1 = $SAM{$sam}{$fqs[0]};
+	my $fq2 = $SAM{$sam}{$fqs[1]} if @fqs eq 2;
 ###############################
 	if ($step =~ /1/){
 		open SH,">$dir_sI/$sam.clean.sh";
@@ -140,7 +141,7 @@ foreach my $sam (keys %SAM){
 	if ($step =~ /3/){
 		open SH,">$dir_sI/$sam.soap.sh";
 		if (@fqs eq 2){
-			print SH "perl $s_soap -i1 $fq1 -i2 $fq2 -ins $ins_f -o $dir_s -p $sam > $dir_sp/$sam.log\n";
+			print SH "perl $s_soap -i1 $SAM{$sam}{$fqs[0]} -i2 $SAM{$sam}{$fqs[1]} -ins $ins_f -o $dir_s -p $sam > $dir_sp/$sam.log\n";
 		}else{
 			print SH "perl $s_soap -i1 $tmp_out -ins $ins_f -o $dir_s -p $sam > $dir_sp/$sam.log\n";
 		}
@@ -155,8 +156,9 @@ $CFG{'vf1'} ||= "0.3G";
 $CFG{'vf2'} ||= "8G";
 $CFG{'vf3'} ||= "15G";
 $CFG{'m'} ||= 30;
+#alias compute2416="ssh compute-24-16"
 print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.c -d $dir_s/qsub_1 -l vf=$CFG{'vf1'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.clean.sh\n" if $step =~ /1/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_s/qsub_2 -l vf=$CFG{'vf2'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.rmhost.sh\n" if $step =~ /2/;
+print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_s/qsub_2 -l vf=$CFG{'vf2'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.rmhost.sh\n" if $step =~ /2/;
 print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_s/qsub_3 -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.soap.sh\n" if $step =~ /3/;
 
 close B1;
