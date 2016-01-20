@@ -3,9 +3,21 @@ use warnings;
 use strict;
 use File::Basename; 
 
-die &usage if @ARGV !=8;
+die &usage if @ARGV !=7;
+sub usage {
+	print <<USAGE;
+usage:
+pe pattern:
+	perl $0 fq1,fq2 <prefix> <qt> <limit> <N num> <qf> <lf>
+se pattern:
+	perl $0 fq1 <prefix> <qt> <limit> <N num> <qf> <lf>
+USAGE
+	exit;
+}
 
-my ($fq1,$fq2,$pfx,$qt,$l,$n,$qf,$lf) = @ARGV;
+my ($fq,$pfx,$qt,$l,$n,$qf,$lf) = @ARGV;
+my @fqs = split(",",$fq);
+my ($fq1,$fq2) = (@fqs == 2)?@fqs:($fq,$fq);
 if($fq1 eq $fq2){
 	open FQ1,"gzip -dc $fq1 |",or die "error\n";
 	open OUT1,"|gzip >$pfx.clean.fq.gz",or die "error\n";
