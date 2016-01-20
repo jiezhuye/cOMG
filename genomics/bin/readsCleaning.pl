@@ -42,7 +42,8 @@ while(<FQ1>){
 	next if (($Qscore*2) > length($quality));			# half Q score judgement
 	# quality pass
 	$READ{$a[0]}{'fqs'} = "pass";
-	$READ{$a[0]}{'seq'} = "$a[0] $a[1] length=$len\n$seq\n$num\n$quality\n";
+#	$READ{$a[0]}{'seq'} = "$a[0] $a[1] length=$len\n$seq\n$num\n$quality\n";
+	$READ{$a[0]}{'seq'} = "$_ length=$len\n$seq\n$num\n$quality\n";
 	$READ{$a[0]}{'len'} = $len;
 	next unless $fq1 eq $fq2;
 	# stat
