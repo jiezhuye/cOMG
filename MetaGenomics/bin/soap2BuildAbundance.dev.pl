@@ -57,7 +57,7 @@ if($sample_pair_2){
 	print STDERR "$cmd";
 	`$cmd`;print STDERR "SE soap finished!\n";
 }
-`gzip $workpath/$prefix.gene.build/*.[ps]e`;
+`gzip $workpath/$sample.gene.build/*.[ps]e`;
 =cut
 chomp(my $f = `ls $workpath/$prefix.gene.build/*.[ps]e|head -1`);
 chomp(my $g = `ls $workpath/$prefix.gene.build/*.[ps]e.gz|head -1`);
