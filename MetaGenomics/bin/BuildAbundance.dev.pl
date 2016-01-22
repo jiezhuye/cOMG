@@ -70,17 +70,17 @@ if (-e $f){
 if ($ab =~ /1/){
 	my $cmd = "perl /ifs1/ST_MD/USER/chenwn/bin/profiling/bin/gene_Profiling.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $list $workpath/$prefix\n";
 	print STDERR $cmd;`$cmd`;
-	print STDERR "reads abudance file built\n";
+	print STDERR "reads abundance file built\n";
 }
 if ($ab =~ /2/){
 	my $cmd = "perl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/profile/05.LostReads_ProfileAdjust/gene_Profiling.cxh.v3.all.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $list $workpath/$prefix.base\n";
 	print STDERR $cmd;`$cmd`;
-	print STDERR "base abudance file built\n";
+	print STDERR "base abundance file built\n";
 }
 if ($ab =~ /3/){
 	my $cmd = "perl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/profile/05.LostReads_ProfileAdjust/gene_Profiling.cxh.v4.all.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $list $workpath/$prefix.aj\n";
 	print STDERR $cmd;`$cmd`;
-	print STDERR "adjusted abudance file built\n";
+	print STDERR "adjusted abundance file built\n";
 }
 
 ####### compress the results to save space ### added by fangchao@genomics.cn
