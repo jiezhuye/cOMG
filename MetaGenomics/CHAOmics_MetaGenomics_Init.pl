@@ -195,7 +195,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			}
 			print SIR "perl $s_rm $seq -d $s_db -m 4 -s 32 -s 30 -r 1 -v 7 -i 0.9 -t 8 -f Y -p  $dir_r/$pfx -q\n";
 			print B2 "sh $dir_sI/$pfx.rmhost.sh\n";
-			print SSR "sh $dir_sI/$pfx.clean.sh\n";
+			print SSR "sh $dir_sI/$pfx.rmhost.sh\n";
 			close SIR;
 		}
 ###############################
