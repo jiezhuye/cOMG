@@ -25,8 +25,16 @@ close IN;
 
 ############################################################################
 
-foreach my $key1 (sort keys %hash)
-{ 
+foreach my $key1 ( sort keys %hash #sort with ASCII order
+
+#		sort with dictionary order
+#		sort{(my $da = lc $a) =~ s/[\W_]+//g;
+#	 		 (my $db = lc $b) =~ s/[\W_]+//g;
+#			 $da cmp $db;
+#		}keys %hash
+
+){
+
 	foreach my $key2 (keys %{$hash{$key1}})
 	{	
 		
