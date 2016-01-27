@@ -25,7 +25,7 @@ close IN;
 
 ############################################################################
 
-foreach my $key1 (keys %hash)
+foreach my $key1 (sort keys %hash)
 { 
 	foreach my $key2 (keys %{$hash{$key1}})
 	{	
