@@ -8,7 +8,7 @@ my($targetSize,$reads,$length,$out) = @ARGV;
 my $gss = 0; # gene set size of $reads
 my %reads_num;
 open I,"$reads" or die "$!\n";
-open ST, ">$out.downsize.abundance";
+open ST, ">$out.abundance";
 my $total_reads=0;
 while(<I>)
 {
@@ -32,7 +32,7 @@ if ($time < 0){
 	    	$time --;
 	    }
 	}
-}	
+	
 
 ################################ abundance ################################
 
@@ -55,12 +55,13 @@ while(<I>){
 		}	
 	}
 }
-print "$gene_n\n";
+close I;
 print ST "ID\treads_pairs\tbase_abundance\treads_abundance\n";
 for my $i(1 .. $gene_n) {
 	print ST "$i\t$reads_num{$i}\t",$reads_num{$i}/$targetSize,"\t",$reads_abundance{$i}/$total_abundance,"\n";
 }
-
+}
+close ST;
 sub usage
 {
     print "usage:perl $0 [targetSize][reads table][len.info][output prefix]\n
