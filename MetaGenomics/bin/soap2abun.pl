@@ -79,55 +79,74 @@ close OT;
 ################ submit stat reads number function
 sub stat_readsnum{
 	my($in,$inser)=@_;
-	if($in =~ /\.pe$/ or $in =~ /\.pe\.gz$/) {
-		if($in =~ /\.pe$/) {
-			open PE,$in or die "$in $!\n";
-		}elsif($in =~ /\.pe\.gz$/) {
-			open PE,"gzip -dc $in|" or die "$in $!\n";
-		}
-		my @tmp;
-		while(<PE>) {
-			chomp;
-			@tmp=split;
-			if($tmp[3] ==1) {
-				$readsnum{$tmp[7]}+=0.5;
+	if($inser ne "SE"){
+		if($in =~ /\.pe$/ or $in =~ /\.pe\.gz$/) {
+			if($in =~ /\.pe$/) {
+				open PE,$in or die "$in $!\n";
+			}elsif($in =~ /\.pe\.gz$/) {
+				open PE,"gzip -dc $in|" or die "$in $!\n";
 			}
-		}
-		close PE;
-	}elsif($in =~ /\.se$/ or $in =~ /\.se\.gz$/) {
-		if($in =~ /\.se$/) { 
-			open SE,$in or die "$in $!\n";
-		}elsif($in =~ /\.se\.gz$/) {
-			open SE,"gzip -dc $in|" or die "$in $!\n";
-		}
-		my(@tmp,%past);
-		while(<SE>) {
-			chomp;
-			@tmp=split;
-			if($tmp[3] ==1) {
-				if($tmp[6] eq '+') {
-					if(($lengths{$tmp[7]}-$tmp[8])<$inser+100) {
-						$tmp[0]=~/^(\S+)\/[12]/;
-						$past{$tmp[7]}{$1}=1;
+			my @tmp;
+			while(<PE>) {
+				chomp;
+				@tmp=split;
+				if($tmp[3] ==1) {
+					$readsnum{$tmp[7]}+=0.5;
+				}
+			}
+			close PE;
+		}elsif($in =~ /\.se$/ or $in =~ /\.se\.gz$/) {
+			if($in =~ /\.se$/) { 
+				open SE,$in or die "$in $!\n";
+			}elsif($in =~ /\.se\.gz$/) {
+				open SE,"gzip -dc $in|" or die "$in $!\n";
+			}
+			my(@tmp,%past);
+			while(<SE>) {
+				chomp;
+				@tmp=split;
+				if($tmp[3] ==1) {
+					if($tmp[6] eq '+') {
+						if(($lengths{$tmp[7]}-$tmp[8])<$inser+100) {
+							$tmp[0]=~/^(\S+)\/[12]/;
+							$past{$tmp[7]}{$1}=1;
+						}
+					} elsif($tmp[6] eq '-') {
+						if(($tmp[8])<$inser-$tmp[5]+100) {
+							$tmp[0]=~/^(\S+)\/[12]/;
+							$past{$tmp[7]}{$1}=1;
+						}
 					}
-				} elsif($tmp[6] eq '-') {
-					if(($tmp[8])<$inser-$tmp[5]+100) {
-						$tmp[0]=~/^(\S+)\/[12]/;
-						$past{$tmp[7]}{$1}=1;
+				}
+			}
+			close SE;
+			foreach $i(sort keys %past) {
+				foreach my $read(sort keys %{$past{$i}}) {
+					if($past{$i}{$read}) {
+						++$readsnum{$i};
 					}
 				}
 			}
 		}
-		close SE;
-		foreach $i(sort keys %past) {
-			foreach my $read(sort keys %{$past{$i}}) {
-				if($past{$i}{$read}) {
-					++$readsnum{$i};
+	}else{
+		if($in =~ /\.se$/ or $in =~ /\.se\.gz$/) {
+			if($in =~ /\.e$/) {
+				open SE,$in or die "$in $!\n";
+			}elsif($in =~ /\.pe\.gz$/) {
+				open SE,"gzip -dc $in|" or die "$in $!\n";
+			}
+			my @tmp;
+			while(<SE>) {
+				chomp;
+				@tmp=split;
+				if($tmp[3] ==1) {
+					$readsnum{$tmp[7]} ++ ;
 				}
 			}
+			close SE;
+
 		}
 	}
-}
 
 ################ submit usage function
 sub usage{
@@ -137,9 +156,15 @@ sub usage{
         This programme is to creat profiling result!\n
         Usage:$0 [reference.length.list] [insertsize.list] [soap.list] [outfile-tage]\n
         In this programme\n
-        a couple of paired reads in pair end is one pair,\n
-        a couple of single end only within insert size is one pair.\n
-        5th verison by Wed Jul 21 09:27:02 2010\n
-        Author Libranjie,zhouyuanjie\@genomics.org.cn\n
+		If Its a set of PE align data and from which got some SE reads:
+		-- provide a insert size list file pathway at \$ARGV[1],and:
+	       	 	a couple of paired reads in pair end is one pair,\n
+    	   		a couple of single end only within insert size is one pair.\n
+		If its a set of SE align data from beginning to end:
+		-- set \$ARGV[1] as "SE" and :
+				each read is count as 1.
+
+        5th verison by Wed Jul 21 09:27:02 2010\nAuthor Libranjie,zhouyuanjie\@genomics.org.cn\n
+		modified by fangchao\@genomics.cn. 20150126
         \n"
 }
