@@ -14,12 +14,13 @@ GetOptions(
 	"h:s"=>\$help,
         );
 
-$ab ||= 123;
+$ab ||= 1;
 chomp (my $pwd=`pwd`);
 $workpath||=$pwd;
 
 if ($ab =~ /1/){
-	my $cmd = "perl /ifs1/ST_MD/USER/chenwn/bin/profiling/bin/gene_Profiling.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $list $workpath/$prefix\n";
+#	my $cmd = "perl /ifs1/ST_MD/USER/chenwn/bin/profiling/bin/gene_Profiling.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $list $workpath/$prefix\n";
+	my $cmd = "perl $Bin/get_gene_profile.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $list $workpath/$prefix\n";
 	print STDERR $cmd;`$cmd`;
 	print STDERR "reads abundance file built\n";
 }

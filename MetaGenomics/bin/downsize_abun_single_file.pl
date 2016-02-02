@@ -3,17 +3,19 @@ use strict;
 die &usage unless @ARGV == 4;
 my($targetSize,$reads,$length,$out) = @ARGV;
 
+sub openMethod{my $f=shift;return((($f =~ /\.gz$/)?"gzip -dc $f|":"$f"))}
 ################################## downsize ######################################
 
 my $gss = 0; # gene set size of $reads
 my %reads_num;
-open I,"$reads" or die "$!\n";
+open I,&openMethod($reads) or die "$!\n";
 open ST, ">$out.abundance";
 my $total_reads=0;
 while(<I>)
 {
     chomp;
     my @temp=split;
+	next if $.==1 && $temp[1]=~/[a-z]/;
  	$gss ++;
 	$total_reads+=$temp[1];
     $reads_num{$temp[0]}=$temp[1];
@@ -32,6 +34,7 @@ if ($time < 0){
 	    	$time --;
 	    }
 	}
+}
 	
 
 ################################ abundance ################################
@@ -60,7 +63,7 @@ print ST "ID\treads_pairs\tbase_abundance\treads_abundance\n";
 for my $i(1 .. $gene_n) {
 	print ST "$i\t$reads_num{$i}\t",$reads_num{$i}/$targetSize,"\t",$reads_abundance{$i}/$total_abundance,"\n";
 }
-}
+
 close ST;
 sub usage
 {
@@ -68,7 +71,6 @@ sub usage
 			The number of reads you wanna trim.
 			A list contain the gene id and reads number(gene & reads number before downsize)
 			A list contain the gene id and its length(gene length reference)
-			output prefix
-		  ";
-    exit;
+			output prefix\n";
+exit;
 }
