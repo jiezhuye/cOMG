@@ -1,13 +1,13 @@
 #!/usr/bin/perl -w
 use strict;
-use PerlIO::gzip;
 
 sub usage{
 	print <<EOD;
 usage: perl $0 [random file] [gene length list] [output prefix]
 
-	Contact: caixianghang \@genomics.org.cn
-	Updated: 2014/11/7
+	Author: caixianghang \@genomics.org.cn
+	Developer:	fangchao \@genomics.cn
+	Updated: 2016/02/02
 EOD
 }
 
@@ -16,7 +16,7 @@ my($if,$len,$out) = @ARGV;
 my (%id,%abundance,$totalabundance,$totalreads,%lengths);
 my $num;
 my $gene_n;
-open I,"<:gzip(autopop)","$if" or die "$!\n";
+open I,&openMethod($if) or die "$!\n";
 while(<I>)
 {
     chomp;
@@ -25,7 +25,7 @@ while(<I>)
 }
 close I;
 
-open I,"<:gzip(autopop)","$len" or die "$!\n";
+open I,&openMethod($len) or die "$!\n";
 while(<I>)
 {
     chomp;
@@ -55,4 +55,9 @@ for my $i(1 .. $gene_n) {
 }
 
 close OT;
-print "$totalreads\n"
+print "$totalreads\n";
+
+sub openMethod {
+	my $f = shift;
+	return((($f =~ /\.gz$/)?"gzip -dc $f|":"$f"));
+}
