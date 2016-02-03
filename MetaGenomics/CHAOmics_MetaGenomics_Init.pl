@@ -48,7 +48,7 @@ GetOptions(
 	"v|version:s" => \$version,
 );
 my $pattern = $ARGV[0];
-die &usage if ( (!defined $path_f)||(!defined $ins_f)||(defined $help));
+die &usage if ( (!defined $path_f)||(defined $help) );
 die &version if defined $version;
 
 # ####################
@@ -57,7 +57,8 @@ die &version if defined $version;
 $step    ||= "1234";
 $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
 $path_f = abs_path($path_f);
-$ins_f  = abs_path($ins_f);
+$ins_f = "SE" if $pattern =~ /se/i;
+$ins_f  = abs_path($ins_f) if $ins_f ne "SE";
 $config  ||= "Qt=20,l=10,N=1,Qf=15,lf=0";
 foreach my $par (split(/,/,$config)){
 	my @a = split(/=/,$par);
@@ -148,7 +149,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	}
 	if ($step =~ /4/){
 		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.a -d $dir_sS/qsub_$sam.4 -l vf=$CFG{'vf4'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_sS/$sam.abun.sh\n"; 
-		print B4 "sh $dir_sI/$sam.abun.sh\n";
+		print B4 "sh $dir_sS/$sam.abun.sh\n";
 	}
 	close LINE;                    
 
@@ -159,6 +160,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 		my $fq1 = $SAM{$sam}{$fqs[0]};
 		my $fq2 = $SAM{$sam}{$fqs[1]}||die "miss fq2 under pe pattern. $!\n" if @fqs eq 2;
 		my $pfx = $fqs[0];
+		$tmp_out = $fq1;
 		if (@fqs eq 2){
 			my @a = $fqs[0] =~/^(\S+)([.-_])([12ab])$/;
 			my @b = $fqs[1] =~/^(\S+)([.-_])([12ab])$/;
