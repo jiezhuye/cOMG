@@ -29,14 +29,17 @@ close IN;
 for($i=0;$i<@order;++$i) {
 	my $openMethod = ($list{$order[$i]} =~ /gz$/)?"gzip -dc $list{$order[$i]} |":"$list{$order[$i]}";
 	open IN,$openMethod  or die "$!\n";
-    <IN>;		# MAKE SURE YOUR ABUNDANCE FILE GOT A HEADER!!!
+#    <IN>;		# MAKE SURE YOUR ABUNDANCE FILE GOT A HEADER!!!
     while(<IN>) {
         chomp;
         @info=split /\t/;
+		if ($.==1) {
+			next unless $info[$row] =~ /\d/;
+		}
         $class{$info[0]}.="\t".$info[$row];
 		$cover{$info[0]} ||= 0; 
 		$Count{$i} ||= 0;
-		if ($info[$row] > 0){ $cover{$info[0]} =1; $Count{$i} ++ };
+		if ($info[$row] > 0){ $cover{$info[0]} ++ ; $Count{$i} ++ };
     }
     close IN;
 }

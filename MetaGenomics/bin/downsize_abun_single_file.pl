@@ -1,8 +1,9 @@
 #!/usr/bin/perl -w
 use strict;
-die &usage unless @ARGV == 4;
-my($targetSize,$reads,$length,$out) = @ARGV;
-
+die &usage unless @ARGV >= 4;
+my($targetSize,$reads,$length,$out,$single_double) = @ARGV;
+# $single_double means weather the reads counts need to be counted tiwce (because some pair-end abundance calculate 1 read as half a *pair*)
+$single_double ||= 1;
 sub openMethod{my $f=shift;return((($f =~ /\.gz$/)?"gzip -dc $f|":"$f"))}
 ################################## downsize ######################################
 
@@ -17,15 +18,16 @@ while(<I>)
     my @temp=split;
 	next if $.==1 && $temp[1]=~/[a-z]/;
  	$gss ++;
-	$total_reads+=$temp[1];
-    $reads_num{$temp[0]}=$temp[1];
+	$total_reads+= $temp[1] * $single_double ;
+    $reads_num{$temp[0]}=$temp[1] * $single_double;
 
 }
 close I;
 
 my $time=$total_reads-$targetSize; 
 if ($time < 0){
-	print ST "Less than $targetSize. Discarded.\n";
+	print ST "Less than $targetSize ($total_reads). Discarded.\n";
+	exit;
 }else{
 	while($time){
 	  	my $point=int(rand($gss)+1);

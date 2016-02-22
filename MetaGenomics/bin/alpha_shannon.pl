@@ -1,7 +1,7 @@
 use warnings;
 use strict;
 
-die "perl $0 [*.in] [*.outdir] [row(optional)]\n" unless @ARGV >= 2;
+die "perl $0 [*.in] [*.output] [row(optional)]\n" unless @ARGV >= 2;
 
 my ($in_f, $out_f, $row) = @ARGV;
 die "Overlap In-Output...\n" if $in_f eq $out_f;
@@ -14,14 +14,23 @@ if($in_f =~/\/([\w|\d|\.|\_|\-]+)\.(abundance|profile)\.gz$/){
 	open IN, $in_f or die $!;
 	$title = $1;
 }
-chomp(my $h = <IN>);
-my @head = split /\s+/, $h;
-shift @head;
+my @head;
+#chomp(my $h = <IN>);
+#my @head = split /\s+/, $h;
+#shift @head;
 while (<IN>) { 
 	chomp;
 	my @s = split /\s+/;
-	shift @s;
+	if($.==1){
+		my $test = (defined $row)?$s[$row]:$s[1];
+		if($test =~/\D/ && $test !~ /e/){
+			@head = @s;
+			shift @head;
+			next;
+		}
+	}
 	if (not defined $row){
+		shift @s;
 		for (0..$#s) {
 			next if $s[$_]== 0;
 			#$gene[$_]++;
@@ -36,7 +45,7 @@ while (<IN>) {
 }
 close IN;
 
-open OT, ">$out_f/$title.shannon" or die "$!\n$out_f/$title.shannon";
+open OT, ">$out_f" or die "$!\n$out_f";
 if(defined $row){
 	$shannon[$row] = $shannon[$row] / $sum[$row] +log($sum[$row]);
 	print OT "$title\t$shannon[$row]\n";
