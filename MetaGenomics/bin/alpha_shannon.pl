@@ -23,7 +23,7 @@ while (<IN>) {
 	my @s = split /\s+/;
 	if($.==1){
 		my $test = (defined $row)?$s[$row]:$s[1];
-		if($test =~/\D/ && $test !~ /e/){
+		if($test =~/\D/ && $test !~ /e-/){
 			@head = @s;
 			shift @head;
 			next;

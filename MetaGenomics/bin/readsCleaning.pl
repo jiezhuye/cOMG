@@ -8,9 +8,10 @@ sub usage {
 	print <<USAGE;
 usage:
 pe pattern:
-	perl $0 fq1,fq2 <prefix> <qt> <limit> <N num> <qf> <lf>
+#	perl $0 fq1,fq2 <prefix> <qt> <limit> <N num> <qf> <lf>
 se pattern:
 	perl $0 fq1 <prefix> <qt> <limit> <N num> <qf> <lf>
+e.g	perl $0 sample.fq clean 20 10 1 15 0 
 USAGE
 	exit;
 }
@@ -53,13 +54,15 @@ while(<FQ1>){
 	my $Qscore = &Qstat($quality,$qf,"filter");
 	next if (($Qscore*2) > length($quality));			# half Q score judgement
 	# quality pass
-	$READ{$a[0]}{'fqs'} = "pass";
+#	$READ{$a[0]}{'fqs'} = "pass";
 #	$READ{$a[0]}{'seq'} = "$a[0] $a[1] length=$len\n$seq\n$num\n$quality\n";
-	$READ{$a[0]}{'seq'} = "$_ length=$len\n$seq\n$num\n$quality\n";
-	$READ{$a[0]}{'len'} = $len;
-	next unless $fq1 eq $fq2;
+#	$READ{$a[0]}{'seq'} = "$_ length=$len\n$seq\n$num\n$quality\n";
+	my $readsSEQ = "$_ length=$len\n$seq\n$num\n$quality\n";
+#	$READ{$a[0]}{'len'} = $len;
+#	next unless $fq1 eq $fq2;
 	# stat
-	print OUT1 $READ{$a[0]}{'seq'};
+#	print OUT1 $READ{$a[0]}{'seq'};
+	print OUT1 $readsSEQ;
 	$remainQ ++;
 	$max_bp1 = ($max_bp1 > $len)?$max_bp1:$len;
 	$min_bp1 = ($min_bp1 < $len)?$min_bp1:$len;

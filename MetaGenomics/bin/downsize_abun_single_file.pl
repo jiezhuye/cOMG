@@ -8,10 +8,11 @@ sub openMethod{my $f=shift;return((($f =~ /\.gz$/)?"gzip -dc $f|":"$f"))}
 ################################## downsize ######################################
 
 my $gss = 0; # gene set size of $reads
-my %reads_num;
+my (%reads_num,@rands);
 open I,&openMethod($reads) or die "$!\n";
 open ST, ">$out.abundance";
 my $total_reads=0;
+my $k=0;
 while(<I>)
 {
     chomp;
@@ -20,7 +21,13 @@ while(<I>)
  	$gss ++;
 	$total_reads+= $temp[1] * $single_double ;
     $reads_num{$temp[0]}=$temp[1] * $single_double;
-
+	if ($temp[1] >0){
+		my $t=$temp[1];
+		while($t){
+			$rands[$k] = $temp[0];
+			$k ++;$t --;
+		}
+	}
 }
 close I;
 
@@ -30,11 +37,10 @@ if ($time < 0){
 	exit;
 }else{
 	while($time){
-	  	my $point=int(rand($gss)+1);
-	   	if($reads_num{$point} > 0){
-	    	$reads_num{$point} --;
-	    	$time --;
-	    }
+	  	my $point=int(rand(@rands));
+	    $reads_num{$rands[$point]} --;
+		splice(@rands,$point,1);
+	    $time --;
 	}
 }
 	

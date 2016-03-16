@@ -20,8 +20,8 @@ usage:
 pattern
 	pe|se		pair end | single end
 options:
-	-p|path		:[essential]sample path file
-	-i|ins		:[essential]insert info file
+	-p|path		:[essential]sample path file (SampleID|fqID|fqPath)
+	-i|ins		:[essential for pair-end seq]insert info file
 	-s|step		:functions,default 1234
 					1	trim+filter
 					2	remove host genomic reads
@@ -48,7 +48,7 @@ GetOptions(
 	"v|version:s" => \$version,
 );
 my $pattern = $ARGV[0];
-die &usage if ( (!defined $path_f)||(defined $help) );
+print &usage && exit if ( (!defined $path_f)||(defined $help) );
 die &version if defined $version;
 
 # ####################
@@ -70,7 +70,8 @@ my $bin = "$Bin/bin";
 #my $s_trim   = "$bin/trimReads.pl";
 #my $s_filter = "$bin/filterReads.pl";
 my $s_clean  = "$bin/readsCleaning.pl";
-my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl";
+#my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script gose wrong on some nodes
+my $s_rm     = "$bin/rmhost_v1.1.pl";
 my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
 my $s_abun   = "$bin/BuildAbundance.dev.pl";
 # public database prefix
@@ -105,21 +106,27 @@ while (<IN>){
 	$SAM{$sam}{$pfx} = $path;
 }
 ###############################
-$CFG{'q'}  ||= "st.q";
-$CFG{'P'}  ||= "st_ms";
-$CFG{'pro'}  ||= 8;
+$CFG{'Qt'}  ||= 20;
+$CFG{'l'}   ||= 10;
+$CFG{'N'}   ||= 1;
+$CFG{'Qf'}  ||= 15;
+$CFG{'lf'}  ||= 0;
+$CFG{'q'}   ||= "st.q";
+$CFG{'P'}   ||= "st_ms";
+$CFG{'pro'} ||= 8;
 $CFG{'vf1'} ||= "0.3G";
 $CFG{'vf2'} ||= "8G";
-$CFG{'vf3'} ||= "15G";
+$CFG{'vf3'} ||= "16G";
 $CFG{'vf4'} ||= "10G";
-$CFG{'m'} ||= 30;
+$CFG{'m'}   ||= 99;
+$CFG{'r'}   ||= 1;
 
 ## start <- top exec batch scripts
 open C1,">$out_dir/qsub_all.sh";
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.c -d $dir_s/qsub_1 -l vf=$CFG{'vf1'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.clean.sh\n" if $step =~ /1/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_s/qsub_2 -l vf=$CFG{'vf2'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.rmhost.sh\n" if $step =~ /2/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_s/qsub_3 -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.soap.sh\n" if $step =~ /3/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.a -d $dir_s/qsub_4 -l vf=$CFG{'vf4'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_s/batch.abun.sh\n" if $step =~ /4/;
+print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.c -d $dir_s/qsub_1 -l vf=$CFG{'vf1'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.clean.sh\n" if $step =~ /1/;
+print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_s/qsub_2 -l vf=$CFG{'vf2'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.rmhost.sh\n" if $step =~ /2/;
+print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_s/qsub_3 -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.soap.sh\n" if $step =~ /3/;
+print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.a -d $dir_s/qsub_4 -l vf=$CFG{'vf4'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.abun.sh\n" if $step =~ /4/;
 close C1;
 ## done! <- top exec batch scripts
 #
@@ -136,19 +143,19 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	open LINE,"> $dir_sS/$sam.$step.sh";
 	if ($step =~ /1/){             
 		open SSC,">$dir_sS/$sam.clean.sh";
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.c -d $dir_sS/qsub_$sam.1 -l vf=$CFG{'vf1'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_sS/$sam.clean.sh\n";
+		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.c -d $dir_sS/qsub_$sam.1 -l vf=$CFG{'vf1'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.clean.sh\n";
 	}                              
 	if ($step =~ /2/){             
 		open SSR,">$dir_sS/$sam.rmhost.sh";
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_sS/qsub_$sam.2 -l vf=$CFG{'vf2'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_sS/$sam.rmhost.sh\n";
+		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_sS/qsub_$sam.2 -l vf=$CFG{'vf2'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.rmhost.sh\n";
 	}                              
 	if ($step =~ /3/){             
 		open SSS,">$dir_sS/$sam.soap.sh";
 		open LIST,">$dir_sp/$sam.soap.list";
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_sS/qsub_$sam.3 -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_sS/$sam.soap.sh\n";
+		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_sS/qsub_$sam.3 -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.soap.sh\n";
 	}
 	if ($step =~ /4/){
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.a -d $dir_sS/qsub_$sam.4 -l vf=$CFG{'vf4'} -q $CFG{'q'} -P $CFG{'P'} -r -m $CFG{'m'} $dir_sS/$sam.abun.sh\n"; 
+		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.a -d $dir_sS/qsub_$sam.4 -l vf=$CFG{'vf4'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.abun.sh\n"; 
 		print B4 "sh $dir_sS/$sam.abun.sh\n";
 	}
 	close LINE;                    
@@ -195,7 +202,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-a $tmp_out";
 				$tmp_out = "$dir_r/$pfx.rmhost.fq.gz";
 			}
-			print SIR "perl $s_rm $seq -d $s_db -m 4 -s 32 -s 30 -r 1 -v 7 -i 0.9 -t 8 -f Y -p  $dir_r/$pfx -q\n";
+			print SIR "perl $s_rm $seq -d $s_db -m 4 -s 32 -s 30 -r 1 -v 7 -i 0.9 -t $CFG{'P'} -f Y -p  $dir_r/$pfx -q\n";
 			print B2 "sh $dir_sI/$pfx.rmhost.sh\n";
 			print SSR "sh $dir_sI/$pfx.rmhost.sh\n";
 			close SIR;

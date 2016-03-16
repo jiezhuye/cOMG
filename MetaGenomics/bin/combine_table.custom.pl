@@ -7,7 +7,7 @@ unless(4==@ARGV) {
 }
 ################################################################################
 my($list_f,$order_f,$row,$out) = @ARGV;
-my(@order,%list,@info,$i,%class,%cover,%Count);
+my(@order,%list,@info,$i,%class,%cover,%Count,%sum_abun);
 ################################################################################
 open IN,"<$list_f" || die "read $list_f $!\n";
 while(<IN>) {
@@ -27,9 +27,9 @@ while(<IN>) {
 close IN;
 ################################################################################
 for($i=0;$i<@order;++$i) {
+	next if not defined $list{$order[$i]};
 	my $openMethod = ($list{$order[$i]} =~ /gz$/)?"gzip -dc $list{$order[$i]} |":"$list{$order[$i]}";
 	open IN,$openMethod  or die "$!\n";
-#    <IN>;		# MAKE SURE YOUR ABUNDANCE FILE GOT A HEADER!!!
     while(<IN>) {
         chomp;
         @info=split /\t/;
@@ -39,7 +39,7 @@ for($i=0;$i<@order;++$i) {
         $class{$info[0]}.="\t".$info[$row];
 		$cover{$info[0]} ||= 0; 
 		$Count{$i} ||= 0;
-		if ($info[$row] > 0){ $cover{$info[0]} ++ ; $Count{$i} ++ };
+		if ($info[$row] > 0){ $cover{$info[0]} ++ ; $Count{$i} ++ ;$sum_abun{$info[0]} += $info[$row] };
     }
     close IN;
 }
@@ -48,26 +48,30 @@ open OT,">$out.profile" or die "write $out $!\n";
 open CrT,">$out.cover" || die $!;
 open CtT,">$out.count" || die $!;
 for($i=0;$i<@order;++$i) {
+	next if not defined $list{$order[$i]};
     print OT "\t",$order[$i];
 	print CtT "$order[$i]\t$Count{$i}\n";
 }
 print OT "\n";
 foreach $i(sort {$a<=>$b} keys %class) {
+	$cover{$i}=1 if $cover{$i}==0;
+	my $avg = $sum_abun{$i} / $cover{$i};
     print OT $i,$class{$i},"\n";
-	print CrT "$i\t$cover{$i}\n";
+	print CrT "$i\t$cover{$i}\t$avg\n";
 }
 close OT;
 close CrT;
 ################################################################################
 sub usage {
     print STDERR<<USAGE;
+Description
+	This programme is to combine profiling table
+Usage:
+	perl $0 [file.list] [order] [row] [outfile prefix]
+		Row must be in 1(pairs),2(base_abundance),3(reads_abundance),4(depth_abundance)
 
-    Description\n
-    This programme is to combine profiling table\n
-    Usage:  perl $0 [file.list] [order] [row] [outfile prefix]\n
-    Row must be in 1(pairs),2(base_abundance),3(reads_abundance),4(depth_abundance)\n
-    Author Libranjie,zhouyuanjie\@genomics.org.cn\n
-    updated 2014/12/5 linyuxiang\@genomics.cn\n
+	Author Libranjie,zhouyuanjie\@genomics.org.cn
+	updated 2014/12/5 linyuxiang\@genomics.cn
 	customized by fangchao\@genomics.cn # 20160118
 USAGE
 }
