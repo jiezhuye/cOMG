@@ -7,10 +7,10 @@ my ($in_f, $out_f, $row) = @ARGV;
 die "Overlap In-Output...\n" if $in_f eq $out_f;
 
 my (@gene, @sum, @shannon,$title,$shannon) = ();
-if($in_f =~/\/([\w|\d|\.|\_|\-]+)\.(abundance|profile)\.gz$/){
+if($in_f =~/\/(\S+)\.gz$/){
 	open IN,"gzip -dc $in_f|" or die $!;
 	$title = $1;
-}elsif($in_f =~/\/([\w|\d|\.|\_|\-]+)\.(abundance|profile)$/){
+}elsif($in_f =~/\/(\S+)$/){
 	open IN, $in_f or die $!;
 	$title = $1;
 }

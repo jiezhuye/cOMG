@@ -13,7 +13,7 @@ open IN,"<$list_f" || die "read $list_f $!\n";
 while(<IN>) {
     chomp;
     @info=split /\//;
-    $info[-1]=~/^(\S+)\.abundance(|\.gz)$/;
+    $info[-1]=~/^(\S+)\.abundance.(|gz)$/;
     my $name =$1;
     $list{$name}=$_;
 }
@@ -54,7 +54,9 @@ for($i=0;$i<@order;++$i) {
 }
 print OT "\n";
 foreach $i(sort {$a<=>$b} keys %class) {
-	$cover{$i}=1 if $cover{$i}==0;
+	if ( not defined $cover{$i} || $cover{$i}==0 ){
+		$cover{$i}=1;
+	}
 	my $avg = $sum_abun{$i} / $cover{$i};
     print OT $i,$class{$i},"\n";
 	print CrT "$i\t$cover{$i}\t$avg\n";

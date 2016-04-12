@@ -28,11 +28,21 @@ options:
 					3	soap mapping to microbiotic genomics
 					4	combine samples' abun into a single profile table
 	-o|outdir	:output directory path. Conatins the results and scripts.
-	-c|config	:set parameters for each setp, default Qt=20,l=10,N=1,Qf=15,lf=0
-					Qt	Qvalue for trim
-					l	bp length for trim
-					N	tolerance number of N for filter
-					Qf	Qvalue for filter. The reads which more than half of the bytes lower than Qf will be discarded.
+	-c|config	:set parameters for each setp, default below:
+					Qt  ||= 20		Qvalue for trim 
+					l   ||= 10	 	bp length for trim
+					N   ||= 1		tolerance number of N for filter
+					Qf  ||= 15	 	Qvalue for filter. The reads which more than half of the bytes lower than Qf will be discarded.
+					lf  ||= 0		left fq length. The minimum
+					q   ||= "st.q"		queue for qsub
+					P   ||= "st_ms"		Project id for qsub
+					pro ||= 8			process number for qsub
+					vf1 ||= "0.3G"		virtual free for qsub in step 1 (trim & filter)
+					vf2 ||= "8G"		virtual free for qsub in step 2 (remove host genes)
+					vf3 ||= "16G"		virtual free for qsub in step 3 (aligned to gene set)
+					vf4 ||= "10G"		virtual free for qsub in step 4 (calculate soap results to abundance)
+					m   ||= 99	 	job number submitted each for qsub
+					r   ||= 1		repeat time when job failed or interrupted
 	-h|help		:show help info
 	-v|version	:show version and author info.
 USAGE
@@ -59,10 +69,12 @@ $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
 $path_f = abs_path($path_f);
 $ins_f = "SE" if $pattern =~ /se/i;
 $ins_f  = abs_path($ins_f) if $ins_f ne "SE";
-$config  ||= "Qt=20,l=10,N=1,Qf=15,lf=0";
-foreach my $par (split(/,/,$config)){
-	my @a = split(/=/,$par);
-	$CFG{$a[0]} = $a[1];
+#$config  ||= "Qt=20,l=10,N=1,Qf=15,lf=0";
+if (defined $config){
+	foreach my $par (split(/,/,$config)){
+		my @a = split(/=/,$par);
+		$CFG{$a[0]} = $a[1];
+	}
 }
 
 # scripts under bin
