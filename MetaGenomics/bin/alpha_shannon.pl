@@ -27,6 +27,8 @@ while (<IN>) {
 			@head = @s;
 			shift @head;
 			next;
+		}else{
+			@head = (0..$#s);
 		}
 	}
 	if (not defined $row){
