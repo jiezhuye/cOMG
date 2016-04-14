@@ -10,10 +10,10 @@ GetOptions(
 	#"g:s"=>\$gene_prediction_fa,
 	"i1:s"=>\$sample_pair_1,
 	"i2:s"=>\$sample_pair_2,
-#	"i3:s"=>\$sample_single,
+	"i3:s"=>\$sample_single,
 	"par:s"=>\$parameter,
 	"ab:i" =>\$ab,
-#	"ins:s"=>\$ins,
+	"ins:s"=>\$ins,
 	"s:s"=>\$sample,
 	"p:s"=>\$prefix,
 	"o:s"=>\$workpath,
@@ -38,22 +38,18 @@ my $db_index1 = "/ifs1/ST_MD/USER/caixianghang/backup/MetaHit/27.1267sample_prof
 my $db_index2 = "/ifs1/ST_MD/USER/caixianghang/backup/MetaHit/27.1267sample_profile/list/db/4Group_uniqGene.div_2.fa.index";
 ####conf####
 `mkdir -p $workpath/$sample.gene.build`;
-=cut
+
 if($sample_single){
-	my $cmd = "$soap_path -a $sample_pair_1 -b $sample_pair_2 -D $db_index1 -D $db_index2 -o $workpath/$prefix.gene.build/$prefix.soap.pair.pe -2 $workpath/$prefix.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$prefix.gene.build/$prefix.soap.pair.log\n";
-	print STDERR "$cmd\n";
-	`$cmd`;print STDERR "PE soap finished!\n";
 	$cmd = "$soap_path -a $sample_single -D $db_index1 -D $db_index2 -o $workpath/$prefix.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$prefix.gene.build/$prefix.soap.single.log\n";
 	 print STDERR "$cmd";
-	`$cmd`;print STDERR "SE soap finished!\n";
-}els
-=cut
+	`$cmd`;print STDERR "single soap finished!\n";
+}
 if($sample_pair_2){
-	my $cmd = "$soap_path -a $sample_pair_1 -b $sample_pair_2 -D $db_index1 -D $db_index2 -m 226 -x 426 -o $workpath/$sample.gene.build/$prefix.soap.pair.pe -2 $workpath/$sample.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.pair.log\n";
+	my $cmd = "$soap_path -a $sample_pair_1 -b $sample_pair_2 -D $db_index1 -D $db_index2 -o $workpath/$sample.gene.build/$prefix.soap.pair.pe -2 $workpath/$sample.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.pair.log\n";
 	print STDERR "$cmd";
-	`$cmd`;print STDERR "PE soap finished!\n";
+	`$cmd`;print STDERR "pair soap finished!\n";
 }elsif($sample_pair_1){
-	my $cmd = "$soap_path -a $sample_pair_1 -D $db_index1 -D $db_index2 -m 226 -x 426 -o $workpath/$sample.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.pair.log\n";
+	my $cmd = "$soap_path -a $sample_pair_1 -D $db_index1 -D $db_index2 -o $workpath/$sample.gene.build/$prefix.soap.SE.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.SE.log\n";
 	print STDERR "$cmd";
 	`$cmd`;print STDERR "SE soap finished!\n";
 }

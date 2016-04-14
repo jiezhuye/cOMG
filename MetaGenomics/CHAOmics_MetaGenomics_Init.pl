@@ -193,7 +193,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			my $seq = "";
 			if (@fqs eq 2){
 				$seq = "$fq1,$fq2";
-				($SAM{$sam}{$fqs[0]}, $SAM{$sam}{$fqs[1]}) = ("$dir_c/$pfx.clean.fq1.gz","$dir_c/$pfx.clean.fq2.gz");
+				($SAM{$sam}{$fqs[0]}, $SAM{$sam}{$fqs[1]},$SAM{$sam}{$fqs[2]}) = ("$dir_c/$pfx.clean.fq1.gz","$dir_c/$pfx.clean.fq2.gz","$dir_c/$pfx.clean.fq.single.gz");
 			}else{
 				$seq = $fq1;
 				$tmp_out = "$dir_c/$pfx.clean.fq.gz";
