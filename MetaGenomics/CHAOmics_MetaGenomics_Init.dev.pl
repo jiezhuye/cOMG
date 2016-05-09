@@ -81,9 +81,9 @@ if (defined $config){
 my $bin = "$Bin/bin";
 #my $s_trim   = "$bin/trimReads.pl";
 #my $s_filter = "$bin/filterReads.pl";
-my $s_clean  = "$bin/readsCleaning.pl";
+my $s_clean  = "$bin/readsFilter.dev.pl";
 #my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script gose wrong on some nodes
-my $s_rm     = "$bin/rmhost_v1.1.pl";
+my $s_rm     = "$bin/rmhost_v1.2.pl";
 my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
 my $s_abun   = "$bin/BuildAbundance.dev.pl";
 # public database prefix
@@ -123,6 +123,8 @@ $CFG{'l'}   ||= 10;
 $CFG{'N'}   ||= 1;
 $CFG{'Qf'}  ||= 15;
 $CFG{'lf'}  ||= 0;
+$CFG{'min'}  ||= 226;
+$CFG{'max'}  ||= 426;
 $CFG{'q'}   ||= "st.q";
 $CFG{'P'}   ||= "st_ms";
 $CFG{'pro'} ||= 8;
@@ -218,7 +220,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-a $tmp_out";
 				$tmp_out = "$dir_r/$pfx.rmhost.fq.gz";
 			}
-			print SIR "perl $s_rm $seq -d $s_db -m 4 -s 32 -s 30 -r 1 -v 7 -i 0.9 -t $CFG{'P'} -f Y -p  $dir_r/$pfx -q\n";
+			print SIR "perl $s_rm $seq -d $s_db -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'pro'} -f Y -q 1 -p $dir_r/$pfx\n";
 			print B2 "sh $dir_sI/$pfx.rmhost.sh\n";
 			print SSR "sh $dir_sI/$pfx.rmhost.sh\n";
 			close SIR;
@@ -227,6 +229,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 		if ($step =~ /3/){
 			open SIS,">$dir_sI/$pfx.soap.sh";
 			my $seq = "";
+			my $par = "m=$CFG{'min'},x=$CFG{'max'},r=0,l=30,M=4,S,p=$CFG{'pro'},v=5,S,c=0.95";
 			if (@fs > 1){
 				$seq = "-i1 $fs[0] -i2 $fs[1] -i3 $fs[2]";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.pair.pe.gz\n";
@@ -236,7 +239,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-i1 $tmp_out";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.SE.se.gz\n";
 			}
-			print SIS "perl $s_soap $seq -o $dir_sp -s $sam -p $pfx > $dir_sp/$pfx.log\n";
+			print SIS "perl $s_soap $seq -par $par -o $dir_sp -s $sam -p $pfx > $dir_sp/$pfx.log\n";
 			print B3 "sh $dir_sI/$pfx.soap.sh\n";
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
 			close SIS;

@@ -22,7 +22,8 @@ GetOptions(
 
 do{&usage;exit(1);} if ($help || !defined($prefix ||$sample_pair_1) );
 
-$parameter ||= ",r=0,l=30,M=4,S,p=8,v=5,S,c=0.95";
+$parameter ||= "m=226,x=426,r=0,l=30,M=4,S,p=8,v=5,S,c=0.95";
+$parameter =~ s/^/ -/g; 
 $parameter =~ s/,/ -/g;
 $parameter =~ s/=/ /g;
 
@@ -40,18 +41,18 @@ my $db_index2 = "/ifs1/ST_MD/USER/caixianghang/backup/MetaHit/27.1267sample_prof
 `mkdir -p $workpath/$sample.gene.build`;
 
 if($sample_single){
-	$cmd = "$soap_path -a $sample_single -D $db_index1 -D $db_index2 -o $workpath/$prefix.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$prefix.gene.build/$prefix.soap.single.log\n";
-	 print STDERR "$cmd";
-	`$cmd`;print STDERR "single soap finished!\n";
+	my $cmd = "$soap_path -a $sample_single -D $db_index1 -D $db_index2 -o $workpath/$prefix.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$prefix.gene.build/$prefix.soap.single.log\n";
+	 print "$cmd";
+	`$cmd`;print "single soap finished!\n";
 }
 if($sample_pair_2){
 	my $cmd = "$soap_path -a $sample_pair_1 -b $sample_pair_2 -D $db_index1 -D $db_index2 -o $workpath/$sample.gene.build/$prefix.soap.pair.pe -2 $workpath/$sample.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.pair.log\n";
-	print STDERR "$cmd";
-	`$cmd`;print STDERR "pair soap finished!\n";
+	print "$cmd";
+	`$cmd`;print "pair soap finished!\n";
 }elsif($sample_pair_1){
 	my $cmd = "$soap_path -a $sample_pair_1 -D $db_index1 -D $db_index2 -o $workpath/$sample.gene.build/$prefix.soap.SE.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.SE.log\n";
-	print STDERR "$cmd";
-	`$cmd`;print STDERR "SE soap finished!\n";
+	print "$cmd";
+	`$cmd`;print "SE soap finished!\n";
 }
 `gzip -f $workpath/$sample.gene.build/*.[ps]e`;
 =cut

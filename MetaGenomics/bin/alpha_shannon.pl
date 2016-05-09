@@ -7,12 +7,12 @@ my ($in_f, $out_f, $row) = @ARGV;
 die "Overlap In-Output...\n" if $in_f eq $out_f;
 
 my (@gene, @sum, @shannon,$title,$shannon) = ();
-if($in_f =~/\/(\S+)\.gz$/){
+if($in_f =~/(\/|)(\S+)\.gz$/){
 	open IN,"gzip -dc $in_f|" or die $!;
-	$title = $1;
-}elsif($in_f =~/\/(\S+)$/){
+	$title = $2;
+}elsif($in_f =~/(\/|)(\S+)$/){
 	open IN, $in_f or die $!;
-	$title = $1;
+	$title = $2;
 }
 my @head;
 #chomp(my $h = <IN>);
@@ -24,11 +24,11 @@ while (<IN>) {
 	if($.==1){
 		my $test = (defined $row)?$s[$row]:$s[1];
 		if($test =~/\D/ && $test !~ /e-/){
+			shift @s;
 			@head = @s;
-			shift @head;
 			next;
 		}else{
-			@head = (0..$#s);
+			@head = (1..$#s);
 		}
 	}
 	if (not defined $row){

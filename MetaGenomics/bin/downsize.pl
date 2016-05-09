@@ -88,7 +88,7 @@ close ST;
 sub usage
 {
     print "usage:perl $0 <targetSize> [reads table] [len.info] [output prefix] <1|2>
-		[targetSize]	The number of reads you wanna trim.
+		[targetSize]	The number of reads you wanna keep.
 		[reads table]	A table contain the gene id and reads number(gene & reads number before downsize)
 		[len.info]	A list contain the gene id and its length(gene length reference)
 		[output prefix]	output prefix

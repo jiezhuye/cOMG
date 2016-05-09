@@ -35,37 +35,37 @@ use threads;
 use threads::shared;
 
 ##initialize some parameters fot GetOptions
-our ($parallelism, $gene_profile, $outdir, $anno_profile);
+our ($parallelism, $gene_profile, $out, $anno_profile);
 our (%parallelism_anno_hash, @line_ary, @sample_ary);
 our (%anno_profile_hash, @anno_profile_ary, $i, $each);
 
 GetOptions( 
         "g=s"=>\$parallelism,
 	"f=s"=>\$gene_profile,
-	"o=s"=>\$outdir,
+	"o=s"=>\$out,
 
 );
 ##get the introduction information
 die `pod2text $0` if ( !$parallelism || !$gene_profile);
 
-$outdir ||= ".";
-$outdir =~ s/\/$//;
+#$out ||= ".";
+#$out =~ s/\/$//;
 
 my $pwd = $ENV{'PWD'};
 
-$outdir = "$pwd/$outdir" if($outdir !~ /^\//);
+#$out = "$pwd/$out" if($out !~ /^\//);
 
 $parallelism = "$pwd/$parallelism" if($parallelism !~ /^\//);
 
 $gene_profile = "$pwd/$gene_profile" if($gene_profile !~ /^\//);
 
 
-unless(-e $outdir){
-	`mkdir -p $outdir`;
-}
+#unless(-e $out){
+#	`mkdir -p $out`;
+#}
 
 #profile result file
-$anno_profile = $outdir.'/anno.profile';
+$anno_profile = $out;
 
 #遍历获取每个基因ID对应的注释
 open GS, $parallelism or die "can't read $parallelism:$!\n";

@@ -64,7 +64,7 @@ Description
 	This programme is to combine profiling table
 Usage:
 	perl $0 [file.list] [row] [outfile prefix]
-		file.list needs 2 columns with one of the sample ID and following the path of the sample's soap result list file
+		file.list needs 2 columns with one of the sample ID and following the path of the abundance file
 		Row must be in 1(pairs),2(base_abundance),3(reads_abundance),4(depth_abundance)
 
 	Author Libranjie,zhouyuanjie\@genomics.org.cn
