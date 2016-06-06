@@ -15,7 +15,7 @@
         Options: 
         -g  <str>   parallelism.[first col: gene id; second col:annotation name]
 	-f  <str>   gene profile file
-	-o  <str>   output dir.[report]
+	-o  <str>   output pfx.[report]
 
 	Contact: liyin@genomics.org.cn
    
