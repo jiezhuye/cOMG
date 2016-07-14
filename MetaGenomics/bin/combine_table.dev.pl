@@ -1,12 +1,12 @@
 #!/usr/bin/perl -w
 use strict;
 ################################################################################
-unless(3==@ARGV) {
+unless(3<=@ARGV) {
     &usage;
     exit;
 }
 ################################################################################
-my($list_f,$row,$out) = @ARGV;
+my($list_f,$row,$out,$alpha) = @ARGV;
 my(@order,%list,@info,$i,%class,%cover,%Count,%sum_abun);
 ################################################################################
 open IN,"<$list_f" || die "read $list_f $!\n";
@@ -47,7 +47,10 @@ for($i=0;$i<@order;++$i) {
 	print CtT "$order[$i]\t$Count{$i}\n";
 }
 print OT "\n";
-foreach my $index (sort {$a<=>$b} keys %class) {
+my @index;
+if($alpha){@index = sort keys %class}else{@index = sort {$a<=>$b} keys %class}
+foreach my $index(@index){
+#foreach my $index (sort {$a<=>$b} keys %class) {
 #	if ( not defined $cover{$index} || $cover{$index}==0 ){
 #		$cover{$index}=1 unless $cover{$index} > 0;
 #	}
