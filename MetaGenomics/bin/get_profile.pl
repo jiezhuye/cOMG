@@ -31,8 +31,8 @@ use File::Basename qw(basename dirname);
 use Getopt::Long;
 use Data::Dumper;
 use Pod::Text;
-use threads;
-use threads::shared;
+#use threads;
+#use threads::shared;
 
 ##initialize some parameters fot GetOptions
 our ($parallelism, $gene_profile, $out, $anno_profile);
