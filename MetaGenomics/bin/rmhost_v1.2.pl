@@ -132,9 +132,9 @@ else{
 		$shell .= "-S ";
 	}
 	$shell .= "-o $opt_p.rmhost.soap 2> $opt_p.rmhost.soap.log";
-#	if(system($shell)){
-#		print STDERR "single read align host error\n";
-#		exit(1);
+	if(system($shell)){
+		print STDERR "single read align host error\n";
+		exit(1);
 	}
 	&get_remove("$opt_p.rmhost.soap");
 	if($opt_q){
