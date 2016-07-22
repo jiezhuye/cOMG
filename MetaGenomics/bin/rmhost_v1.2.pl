@@ -132,9 +132,9 @@ else{
 		$shell .= "-S ";
 	}
 	$shell .= "-o $opt_p.rmhost.soap 2> $opt_p.rmhost.soap.log";
-	if(system($shell)){
-		print STDERR "single read align host error\n";
-		exit(1);
+#	if(system($shell)){
+#		print STDERR "single read align host error\n";
+#		exit(1);
 	}
 	&get_remove("$opt_p.rmhost.soap");
 	if($opt_q){
@@ -278,8 +278,7 @@ sub get_single_fq{
 		$name1 = $_;
 		my $name = $_;
 		$name1 =~ s/^\@//;
-		$name1 =~ /(\S+)\/[12]/;
-		$name1 =~ $1;
+		$name1 =~ s/\/[12]$//;
 		if(exists $remove{$name1}){
 			<I>;<I>;<I>;
 		}
