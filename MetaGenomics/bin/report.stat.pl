@@ -2,7 +2,7 @@
 use strict;
 
 my $usage = "USAGE:
-	perl <map> <work dir> <steps>
+	perl <map> <work dir> <steps> > outputfile
 	map: seq_id\tsample_id.\n";
 die $usage if @ARGV <3;
 my ($map,$wd,$step)=@ARGV;
@@ -93,7 +93,7 @@ foreach my $sam ( sort keys %STAT ){
 		foreach my $head (@{$STAT{$sam}{$part}{'H'}}){
 			#$label .= "\t$part" if $time;
 			$title .= "\t$steps[$part]\_$head" if $time;
-			$content .= "\t$STAT{$sam}{$part}{$head}";
+			$content .= (defined $STAT{$sam}{$part}{$head})?"\t$STAT{$sam}{$part}{$head}":"\tNA";
 		}
 	}
 #		$label .= "\n" if $time;
