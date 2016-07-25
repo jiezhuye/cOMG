@@ -61,7 +61,8 @@ while(<FQ1>){
 		$flag += 1;
 		$remainN[0] ++ ; 
 		# filter more
-		$readsSEQ1 = "$pfx1\/1 length=$len\n$seq\n$num\n$quality\n";
+		my $PFX = ( $fq1 eq $fq2)?$pfx1:"$pfx1\/1";
+		$readsSEQ1 = "$PFX length=$len\n$seq\n$num\n$quality\n";
 		#print OUT1 $readsSEQ;
 		$remainQ[0] ++;
 		$max_bp[0] = ($max_bp[0] > $len)?$max_bp[0]:$len;
