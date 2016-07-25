@@ -275,8 +275,9 @@ sub get_single_fq{
 	while(<I>){
 		$total_single++;
 		chomp;
-		$name1 = $_;
-		my $name = $_;
+		my @temp = split /\s+/, $_;
+		$name1 = $temp[0];
+		my $name = $temp[0];
 		$name1 =~ s/^\@//;
 		$name1 =~ s/\/[12]$//;
 		if(exists $remove{$name1}){
