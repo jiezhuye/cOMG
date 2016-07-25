@@ -31,7 +31,8 @@ if($fq1 eq $fq2){
 }
 open STAT,"> $pfx.clean.stat_out",or die "error\n";
 
-my(@total,@remainN,@remainQ,@sum_bp)= ();
+my @total = (0,0);
+my(@remainN,@remainQ,@sum_bp)= ();
 my @max_bp = (0,0);
 my @min_bp = (10000,10000);
 
