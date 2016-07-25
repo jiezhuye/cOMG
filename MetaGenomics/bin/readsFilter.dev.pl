@@ -127,7 +127,7 @@ unless ($fq1 eq $fq2){
 	print STAT "$total[0]\t$max_bp[0]\t$min_bp[0]\t$avg1\t$max_bp[1]\t$min_bp[1]\t$avg2\t$remainQ[0]\t$remainQ[1]\t$rate1\t$rate2\t$tag\n";
 }else{
 	print STAT "Total\tmax\tmin\tavg\tremain\trate\tSampleTAG(trim_limit=$l,Qt=$qt,N=$n,Qf=$qf,min=$lf)\n";
-	print STAT "$total[1]\t$max_bp[0]\t$min_bp[0]\t$avg1\t$remainQ[0]\t$rate1\t$tag\n";
+	print STAT "$total[0]\t$max_bp[0]\t$min_bp[0]\t$avg1\t$remainQ[0]\t$rate1\t$tag\n";
 }
 
 close STAT;
