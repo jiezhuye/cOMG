@@ -44,7 +44,7 @@ while(<FQ1>){
 	my ($seq,$num,$quality,$originLength,$Tscore,$len,$count,$Qscore) =();
 	chomp;
 	my @a =split;
-	(my $pfx1 = $a[0]) =~ s/\/1$//;
+	(my $pfx1 = $a[0]) =~ s/\/[12]$//;
 	chomp($seq=<FQ1>);
 	chomp($num=<FQ1>);
 	chomp($quality=<FQ1>);
