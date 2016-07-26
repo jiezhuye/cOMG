@@ -57,19 +57,29 @@ if($step =~ /2/){
 }
 
 if($step =~ /3/){
-	my @samples = `ls $wd/soap/*build/|grep soap.pair.log|sed 's/.soap.pair.log//'`;
+#	my @samples = `ls $wd/soap/*build/|grep log|sed 's/.soap.*.log//'|uniq`;
+	my @samples = `ls $wd/soap/*build/*log|sed 's/\.soap\.[a-zA-Z]*\.log//'|uniq`;
+
 	while ($#samples >-1){
 		my(@heads,@vals)=();
-		chomp(my $sam = shift @samples);
-		open SC,"tail -9 $wd/soap/*.gene.build/$sam.soap.pair.log|" or die $!;               
-		chomp($_=<SC>);@heads = split /\s+|\t/;
-#		@heads = split(/\s+|\t/,$line);
-		@{$STAT{$sam}{3}{'H'}} = ('Reads','aligned');
-		$STAT{$sam}{3}{'Reads'} = $heads[2];
-		chomp($_=<SC>);@vals = split /\s+|\t/;
-#		@vals = split(/\s+|\t/,$line);
-		$STAT{$sam}{3}{'aligned'} = $vals[1];
-		close SC;
+		chomp(my $path = shift @samples);
+		my $sam = (split('/',$path))[-1];
+		my @logs = ();
+		if (-e "$path.soap.SE.log"){push @logs,"SE"}
+		if (-e "$path.soap.pair.log"){push @logs,"pair"}
+		if (-e "$path.soap.single.log"){push @logs,"single"}
+		while($#logs>-1){
+			my $log = shift @logs;
+			open SC,"tail -9 $path.soap.$log.log|" or die $!;               
+			chomp($_=<SC>);@heads = split /\s+|\t/;
+#			@heads = split(/\s+|\t/,$line);
+			@{$STAT{$sam}{"3.$log"}{'H'}} = ("$log.reads","$log.aligned");
+			$STAT{$sam}{"3.$log"}{'Reads'} = $heads[2];
+			chomp($_=<SC>);@vals = split /\s+|\t/;
+	#		@vals = split(/\s+|\t/,$line);
+			$STAT{$sam}{"3.$log"}{'aligned'} = $vals[1];
+			close SC;
+		}
 	}
 }
 
