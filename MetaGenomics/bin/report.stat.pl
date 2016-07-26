@@ -15,23 +15,27 @@ my $d_clean = "$wd/clean";
 my	$d_rmhost = "$wd/rmhost";
 my	$d_soap = "$wd/soap";
 
+my(@seqs,@inds)=();
 open MAP,"<$map" or die $!;
 while(<MAP>){
 	chomp;
 	my @a = split;
-	$MAP{1}{$a[1]}=$a[0];
-	$MAP{2}{$a[0]}=$a[1];
+	$MAP{1}{$a[1]}=$a[0]; #individual -> sequence 
+	$MAP{2}{$a[0]}=$a[1]; #sequence -> individual
+	# In this script, @samples refers seq/indi depends on the objects under each steps.
+	push @inds,$a[0];
+	push @seqs,$a[1];
 }
 
 my @steps =("none","filter","rmhost","soap","abun");
 if($step =~ /1/){
-	my @samples = `ls $wd/clean/|grep clean.stat_out|sed 's/.clean.stat_out//'`;
+	my @samples = @seqs;
 	while ($#samples >-1){
 		my(@heads,@vals)=();
 		chomp(my $sam = shift @samples);
 		open SC,"< $wd/clean/$sam.clean.stat_out" or die "can note open $wd/clean/$sam.clean.stat_out!".$!;
-		chomp($_=<SC>);@heads = split;
-		chomp($_=<SC>);@vals = split;
+		chomp($_=<SC>);@heads = split /\t|\s/;
+		chomp($_=<SC>);@vals = split /\t|\s/;
 		@{$STAT{$sam}{1}{'H'}} = @heads;
 		for (my $i=0;$i<=$#heads;$i++){
 			$STAT{$sam}{1}{$heads[$i]} = $vals[$i];
@@ -41,13 +45,13 @@ if($step =~ /1/){
 }
 
 if($step =~ /2/){
-	my @samples = `ls $wd/rmhost/|grep rmhost.stat_out|sed 's/.rmhost.stat_out//'`;
+	my @samples = @seqs;
 	while ($#samples >-1){
 		my(@heads,@vals)=();
 		chomp(my $sam = shift @samples);
 		open SC,"< $wd/rmhost/$sam.rmhost.stat_out" or die $!; 
-		chomp($_=<SC>);@heads = split;
-		chomp($_=<SC>);@vals = split;
+		chomp($_=<SC>);@heads = split /\t|\s/;
+		chomp($_=<SC>);@vals = split /\t|\s/;
 		@{$STAT{$sam}{2}{'H'}} = @heads;
 		for (my $i=0;$i<=$#heads;$i++){
 			$STAT{$sam}{2}{$heads[$i]} = $vals[$i];
@@ -57,13 +61,11 @@ if($step =~ /2/){
 }
 
 if($step =~ /3/){
-#	my @samples = `ls $wd/soap/*build/|grep log|sed 's/.soap.*.log//'|uniq`;
-	my @samples = `ls $wd/soap/*build/*log|sed 's/\.soap\.[a-zA-Z]*\.log//'|uniq`;
-
+	my @samples = @seqs;
 	while ($#samples >-1){
 		my(@heads,@vals)=();
-		chomp(my $path = shift @samples);
-		my $sam = (split('/',$path))[-1];
+		my $sam = shift @samples;
+		my $path = "$wd/soap/$MAP{1}{$sam}.gene.build/$sam";
 		my @logs = ();
 		if (-e "$path.soap.SE.log"){push @logs,"SE"}
 		if (-e "$path.soap.pair.log"){push @logs,"pair"}
@@ -72,21 +74,19 @@ if($step =~ /3/){
 			my $log = shift @logs;
 			open SC,"tail -9 $path.soap.$log.log|" or die $!;               
 			chomp($_=<SC>);@heads = split /\s+|\t/;
-#			@heads = split(/\s+|\t/,$line);
 			@{$STAT{$sam}{"3.$log"}{'H'}} = ("$log.reads","$log.aligned");
-			$STAT{$sam}{"3.$log"}{'Reads'} = $heads[2];
+			$STAT{$sam}{"3.$log"}{"$log.reads"} = $heads[2];
 			chomp($_=<SC>);@vals = split /\s+|\t/;
-	#		@vals = split(/\s+|\t/,$line);
-			$STAT{$sam}{"3.$log"}{'aligned'} = $vals[1];
+			$STAT{$sam}{"3.$log"}{"$log.aligned"} = $vals[1];
 			close SC;
 		}
 	}
 }
 
 if($step =~ /4/){
-	my @samples = `ls $wd/soap/|grep abundance.size|sed 's/.abundance.size//'`;
+	my @samples = @inds;
 	while ($#samples >-1){
-		chomp(my $sam = shift @samples);
+		my $sam = shift @samples;
 		chomp(my $size=`cat $wd/soap/$sam.abundance.size`);
 		@{$STAT{$MAP{2}{$sam}}{4}{'H'}} = "size";
 		$STAT{$MAP{2}{$sam}}{4}{'size'} = $size;
@@ -94,7 +94,6 @@ if($step =~ /4/){
 }
 
 my $time =1;
-#my $label = "id\tsample";
 my $title = "id\tsample";
 my $content = "";
 foreach my $sam ( sort keys %STAT ){
@@ -106,7 +105,6 @@ foreach my $sam ( sort keys %STAT ){
 			$content .= (defined $STAT{$sam}{$part}{$head})?"\t$STAT{$sam}{$part}{$head}":"\tNA";
 		}
 	}
-#		$label .= "\n" if $time;
 		$title .= "\n" if $time;
 		$time = 0;
 		$content .= "\n";
