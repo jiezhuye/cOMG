@@ -269,7 +269,10 @@ close B3;
 close B4;
 print C2 "wait\n"; close C2;
 ## done! <- contents of each batch scripts
-
+open STAT,">$out_dir/report.stat.sh";
+print STAT "perl $bin/report.stat.pl $path_f $out_dir $step > REPORT.txt\n";
+close STAT;
+exit;
 # ####################
 # SUB FUNCTION
 # ####################
