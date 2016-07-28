@@ -28,7 +28,7 @@ options:
 					3	soap mapping to microbiotic genomics
 					4	combine samples' abun into a single profile table
 	-o|outdir	:output directory path. Conatins the results and scripts.
-	-c|config	:set parameters for each setp, default below:
+	-c|config	:provide a configure file including needed database and parameters for each setp, default below:
 					Qt  ||= 20		Qvalue for trim 
 					l   ||= 10	 	bp length for trim
 					N   ||= 1		tolerance number of N for filter
