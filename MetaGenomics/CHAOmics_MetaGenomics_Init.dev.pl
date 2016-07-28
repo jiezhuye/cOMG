@@ -69,13 +69,22 @@ $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
 $path_f = abs_path($path_f);
 $ins_f = "SE" if $pattern =~ /se/i;
 $ins_f  = abs_path($ins_f) if $ins_f ne "SE";
-#$config  ||= "Qt=20,l=10,N=1,Qf=15,lf=0";
+
 if (defined $config){
-	foreach my $par (split(/,/,$config)){
-		my @a = split(/=/,$par);
-		$CFG{$a[0]} = $a[1];
+	if($config =~ /\.cfg$/){
+		open CFG,"$config" or die "failed to open configure file $config. $!\n";
+		while(<CFG>){chomp;next if $_ =~ /^#/;next if $_ eq "";
+			my @a = split /\s*=\s*|#/;
+			$CFG{$a[0]} = $a[1];
+		}
+	}else{
+		foreach my $par (split(/,/,$config)){
+			my @a = split(/=/,$par);
+			$CFG{$a[0]} = $a[1];
+		}
 	}
 }
+
 
 # scripts under bin
 my $bin = "$Bin/bin";
@@ -87,7 +96,7 @@ my $s_rm     = "$bin/rmhost_v1.2.pl";
 my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
 my $s_abun   = "$bin/BuildAbundance.dev.pl";
 # public database prefix
-my $s_db     = "/nas/RD_09C/resequencing/resequencing/tmp/pub/Genome/Human/human.fa.index";
+$CFG{'db_host'} ||= "/nas/RD_09C/resequencing/resequencing/tmp/pub/Genome/Human/human.fa.index";
 # project results directiory structure
 my $dir_s = $out_dir."/script";
 	my $dir_sI = $dir_s."/individual";
@@ -220,7 +229,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-a $tmp_out";
 				$tmp_out = "$dir_r/$pfx.rmhost.fq.gz";
 			}
-			print SIR "perl $s_rm $seq -d $s_db -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'pro'} -f Y -q 1 -p $dir_r/$pfx\n";
+			print SIR "perl $s_rm $seq -d $CFG{'db_host'} -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'pro'} -f Y -q 1 -p $dir_r/$pfx\n";
 			print B2 "sh $dir_sI/$pfx.rmhost.sh\n";
 			print SSR "sh $dir_sI/$pfx.rmhost.sh\n";
 			close SIR;
@@ -239,7 +248,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-i1 $tmp_out";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.SE.se.gz\n";
 			}
-			print SIS "perl $s_soap $seq -par $par -o $dir_sp -s $sam -p $pfx > $dir_sp/$pfx.log\n";
+			print SIS "perl $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx > $dir_sp/$pfx.log\n";
 			print B3 "sh $dir_sI/$pfx.soap.sh\n";
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
 			close SIS;

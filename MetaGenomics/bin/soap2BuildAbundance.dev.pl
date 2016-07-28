@@ -4,13 +4,14 @@ use Getopt::Long;
 use Pod::Text;
 use FindBin qw/$Bin/;
 
-my ($sample_pair_1,$sample_pair_2,$sample_single,$parameter,$ab,$ins,$sample,$prefix,$help,$workpath);
+my ($sample_pair_1,$sample_pair_2,$sample_single,$dbs,$parameter,$ab,$ins,$sample,$prefix,$help,$workpath);
 GetOptions(
         #"s:s"=>\$scaf_fa,
 	#"g:s"=>\$gene_prediction_fa,
 	"i1:s"=>\$sample_pair_1,
 	"i2:s"=>\$sample_pair_2,
 	"i3:s"=>\$sample_single,
+	"DB:s" =>\$dbs,
 	"par:s"=>\$parameter,
 	"ab:i" =>\$ab,
 	"ins:s"=>\$ins,
@@ -37,20 +38,22 @@ $workpath||=$pwd;
 my $soap_path = "/ifs1/ST_MD/USER/chenwn/bin/profiling/bin/soap2.22";
 my $db_index1 = "/ifs1/ST_MD/USER/caixianghang/backup/MetaHit/27.1267sample_profile/list/db/4Group_uniqGene.div_1.fa.index";
 my $db_index2 = "/ifs1/ST_MD/USER/caixianghang/backup/MetaHit/27.1267sample_profile/list/db/4Group_uniqGene.div_2.fa.index";
+$dbs ||= join(',',$db_index1,$db_index2);
+$dbs =~ s/,/ -D /g;
 ####conf####
 `mkdir -p $workpath/$sample.gene.build`;
 
 if($sample_single){
-	my $cmd = "$soap_path -a $sample_single -D $db_index1 -D $db_index2 -o $workpath/$prefix.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$prefix.gene.build/$prefix.soap.single.log\n";
+	my $cmd = "$soap_path -a $sample_single -D $dbs -o $workpath/$prefix.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$prefix.gene.build/$prefix.soap.single.log\n";
 	 print "$cmd";
 	`$cmd`;print "single soap finished!\n";
 }
 if($sample_pair_2){
-	my $cmd = "$soap_path -a $sample_pair_1 -b $sample_pair_2 -D $db_index1 -D $db_index2 -o $workpath/$sample.gene.build/$prefix.soap.pair.pe -2 $workpath/$sample.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.pair.log\n";
+	my $cmd = "$soap_path -a $sample_pair_1 -b $sample_pair_2 -D $dbs -o $workpath/$sample.gene.build/$prefix.soap.pair.pe -2 $workpath/$sample.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.pair.log\n";
 	print "$cmd";
 	`$cmd`;print "pair soap finished!\n";
 }elsif($sample_pair_1){
-	my $cmd = "$soap_path -a $sample_pair_1 -D $db_index1 -D $db_index2 -o $workpath/$sample.gene.build/$prefix.soap.SE.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.SE.log\n";
+	my $cmd = "$soap_path -a $sample_pair_1 -D $dbs -o $workpath/$sample.gene.build/$prefix.soap.SE.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.SE.log\n";
 	print "$cmd";
 	`$cmd`;print "SE soap finished!\n";
 }
