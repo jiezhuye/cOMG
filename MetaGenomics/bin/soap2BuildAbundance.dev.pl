@@ -35,7 +35,7 @@ chomp (my $pwd=`pwd`);
 $workpath||=$pwd;
 
 ####SOAP####
-my $soap_path = "/ifs1/ST_MD/USER/chenwn/bin/profiling/bin/soap2.22";
+my $soap_path = "$FindBin::Bin/soap2.22";
 my $db_index1 = "/ifs1/ST_MD/USER/caixianghang/backup/MetaHit/27.1267sample_profile/list/db/4Group_uniqGene.div_1.fa.index";
 my $db_index2 = "/ifs1/ST_MD/USER/caixianghang/backup/MetaHit/27.1267sample_profile/list/db/4Group_uniqGene.div_2.fa.index";
 $dbs ||= join(',',$db_index1,$db_index2);
