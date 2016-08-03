@@ -43,8 +43,8 @@ elsif($sample_pair_2){
 	}
 elsif($sample_pair_1){
 	my $cmd = "$soap_path -a $sample_pair_1 -D $db_index1 -D $db_index2 -m 226 -x 426 -o $workpath/$prefix.gene.build/$prefix.soap.pair.pe -2 $workpath/$prefix.gene.build/$prefix.soap.pair.se -r 0 -l 30 -M 4 -S -p 8 -v 5 -S -c 0.95 2> $workpath/$prefix.gene.build/$prefix.soap.pair.log\n";
-#	print STDERR "$cmd";
-#	`$cmd`;print STDERR "soap finished!\n";
+	print STDERR "$cmd";
+	`$cmd`;print STDERR "soap finished!\n";
 }
 chomp(my $f = `ls $workpath/$prefix.gene.build/*.[ps]e|head -1`);
 chomp(my $g = `ls $workpath/$prefix.gene.build/*.[ps]e.gz|head -1`);
