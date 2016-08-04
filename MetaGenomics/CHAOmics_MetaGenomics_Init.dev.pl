@@ -91,7 +91,7 @@ my $bin = "$Bin/bin";
 #my $s_trim   = "$bin/trimReads.pl";
 #my $s_filter = "$bin/filterReads.pl";
 my $s_clean  = "$bin/readsFilter.dev.pl";
-#my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script gose wrong on some nodes
+#my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script goes wrong on some nodes
 my $s_rm     = "$bin/rmhost_v1.2.pl";
 my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
 my $s_abun   = "$bin/BuildAbundance.dev.pl";
@@ -259,7 +259,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 
 	if ($step =~ /4/){ # Since step4 contains abundance building which needs operated on sample level, I've got to put them here.
 		open ABUN,">$dir_sS/$sam.abun.sh";
-		print ABUN "perl $s_abun -ins $ins_f -l  $dir_sp/$sam.soap.list -o $dir_sp -p $sam\n";
+		print ABUN "perl $s_abun -ins $ins_f -gl $CFG{'RGL'} -l  $dir_sp/$sam.soap.list -o $dir_sp -p $sam\n";
 		close ABUN;
 	}
 }
