@@ -58,7 +58,7 @@ $opt_f = "Y" unless $opt_f;
 my ($clean1, $clean2, $single, $stat);
 my ($total_num, $total_single, $pair_num, $single_num, $read1_base, $read2_base, $single_base) = (0, 0, 0, 0, 0, 0, 0);
 my ($read1_length, $read2_length, $max_length, $min_length, $avg_length);
-$max_length = 0; $min_length = 1000000;
+$max_length = 0; $min_length = 1e10;
 
 my ($soap_path, $shell, %remove, @host, $host);
 my ($name1, $seq1, $head1, $qual1, $name2, $seq2, $head2, $qual2);
@@ -146,14 +146,15 @@ else{
 }
 
 open O, ">$stat" or die "can't open file $stat $!\n";
-print O "Total\tPair\tSingle\tread1_base\tread2_base\tsingle_base\tmax\tmin\tavg\n";
 if($opt_b){
 	$avg_length = ($read1_base + $read2_base + $single_base) / ($pair_num * 2 + $single_num);
-	print O "$total_num\t$pair_num\t$single_num\t$read1_base\t$read2_base\t$single_base\t$max_length\t$min_length\t$avg_length\n";
+	print O "Total_pair\tAligned_pair\tTotal_single\tAligned_single\tread1_base\tread2_base\tsingle_base\tmax_length\tmin_length\tavg_length\n";
+	print O "$total_num\t$pair_num\t$total_single\t$single_num\t$read1_base\t$read2_base\t$single_base\t$max_length\t$min_length\t$avg_length\n";
 }
 else{
 	$avg_length = $single_base / $single_num;
-	print O "$total_single\t$single_num\t0\t$single_base\t0\t0\t$max_length\t$min_length\t$avg_length\n";
+	print O "Total_single\tAligned_single\tsingle_base\tmax_length\tmin_length\tavg_length\n";
+	print O "$total_single\t$single_num\t$single_base\t$max_length\t$min_length\t$avg_length\n";
 }
 close O;
 #system("rm -f $opt_p.rmhost.soap $opt_p.rmhost.soap.single $opt_p.rmhost.soap.pe $opt_p.rmhost.soap.se");
