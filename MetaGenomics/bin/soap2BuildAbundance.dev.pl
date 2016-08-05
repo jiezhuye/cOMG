@@ -44,7 +44,7 @@ $dbs =~ s/,/ -D /g;
 `mkdir -p $workpath/$sample.gene.build`;
 
 if($sample_single){
-	my $cmd = "$soap_path -a $sample_single -D $dbs -o $workpath/$prefix.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$prefix.gene.build/$prefix.soap.single.log\n";
+	my $cmd = "$soap_path -a $sample_single -D $dbs -o $workpath/$prefix.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$sample.gene.build/$prefix.soap.single.log\n";
 	 print "$cmd";
 	`$cmd`;print "single soap finished!\n";
 }
@@ -58,37 +58,10 @@ if($sample_pair_2){
 	`$cmd`;print "SE soap finished!\n";
 }
 `gzip -f $workpath/$sample.gene.build/*.[ps]e`;
-=cut
-chomp(my $f = `ls $workpath/$prefix.gene.build/*.[ps]e|head -1`);
-chomp(my $g = `ls $workpath/$prefix.gene.build/*.[ps]e.gz|head -1`);
-if (-e $f){
-	`find $workpath/$prefix.gene.build/*.[ps]e >$workpath/$prefix.soap.list`;
-}elsif(-e $g){
-	`find $workpath/$prefix.gene.build/*gz > $workpath/$prefix.soap.list`;
-}else{
-	die "can not find soap result files.".$!;
-}
 
-if ($ab =~ /1/){
-	my $cmd = "perl /ifs1/ST_MD/USER/chenwn/bin/profiling/bin/gene_Profiling.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $workpath/$prefix.soap.list $workpath/$prefix\n";
-	print STDERR $cmd;`$cmd`;
-	print STDERR "reads abudance file built\n";
-}
-if ($ab =~ /2/){
-	my $cmd = "perl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/profile/05.LostReads_ProfileAdjust/gene_Profiling.cxh.v3.all.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $workpath/$prefix.soap.list $workpath/$prefix.base\n";
-	print STDERR $cmd;`$cmd`;
-	print STDERR "base abudance file built\n";
-}
-if ($ab =~ /3/){
-	my $cmd = "perl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/profile/05.LostReads_ProfileAdjust/gene_Profiling.cxh.v4.all.pl /ifs1/ST_MD/PMO/SZC08004_MetaHIT/User/caixianghang/06.Profile/1.GeneProfile/list/760MetaHit_139HMP_368PKU_511Bac.uniq.fa.len $ins $workpath/$prefix.soap.list $workpath/$prefix.aj\n";
-	print STDERR $cmd;`$cmd`;
-	print STDERR "adjusted abudance file built\n";
-}
-
-####### compress the results to save space ### added by fangchao@genomics.cn
-`gzip $workpath/$prefix.gene.build/*.[ps]e`;
-#`gzip -f $workpath/$prefix*.abundance`;
-=cut
+########################
+# sub function
+########################
 sub usage {
         print <<EOD;
 Description: This program is used to produce IGC gene set profile.
