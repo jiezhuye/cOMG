@@ -74,8 +74,8 @@ if (defined $config){
 	if($config =~ /\.cfg$/){
 		open CFG,"$config" or die "failed to open configure file $config. $!\n";
 		while(<CFG>){chomp;next if $_ =~ /^#/;next if $_ eq "";
-			my @a = split /\s*=\s*|#/;
-			$CFG{$a[0]} = $a[1];
+			$_ =~ /^(\S+)\s*=\s*(\S+)/;
+			$CFG{$1} = $2;
 		}
 	}else{
 		foreach my $par (split(/,/,$config)){
@@ -248,7 +248,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-i1 $tmp_out";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.SE.se.gz\n";
 			}
-			print SIS "perl $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx > $dir_sp/$pfx.log\n";
+			print SIS "perl $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx 1&2> $dir_sp/$pfx.log\n";
 			print B3 "sh $dir_sI/$pfx.soap.sh\n";
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
 			close SIS;
