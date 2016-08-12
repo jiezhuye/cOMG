@@ -93,6 +93,31 @@ if($step =~ /4/){
 	}   
 }
 
+if($step =~ /5/){
+	my @samples = @seqs;
+	while ($#samples >-1){
+		my(@heads,@vals)=();
+		my $sam = shift @samples;
+		my $path = "$wd/soapALL/$MAP{1}{$sam}.gene.build/$sam";
+		my @logs = ();
+		if (-e "$path.soap.SE.log"){push @logs,"SE"}
+		if (-e "$path.soap.pair.log"){push @logs,"pair"}
+		if (-e "$path.soap.single.log"){push @logs,"single"}
+		while($#logs>-1){
+			my $log = shift @logs;
+			open SC,"tail -9 $path.soap.$log.log|" or die $!;               
+			chomp($_=<SC>);@heads = split /\s+|\t/;
+			@{$STAT{$sam}{"5.$log"}{'H'}} = ("$log.AllReads","$log.AllAligned");
+			$STAT{$sam}{"5.$log"}{"$log.AllReads"} = $heads[2];
+			chomp($_=<SC>);@vals = split /\s+|\t/;
+			$STAT{$sam}{"5.$log"}{"$log.ALLAligned"} = $vals[1];
+			close SC;
+		}
+	}
+}  
+
+
+
 my $time =1;
 my $title = "id\tsample";
 my $content = "";
@@ -105,9 +130,9 @@ foreach my $sam ( sort keys %STAT ){
 			$content .= (defined $STAT{$sam}{$part}{$head})?"\t$STAT{$sam}{$part}{$head}":"\tNA";
 		}
 	}
-		$title .= "\n" if $time;
-		$time = 0;
-		$content .= "\n";
+	$title .= "\n" if $time;
+	$time = 0;
+	$content .= "\n";
 }
 print "$title"."$content";
 
