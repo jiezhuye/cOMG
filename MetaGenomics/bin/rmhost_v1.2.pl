@@ -191,10 +191,7 @@ sub get_paired_fq{
 		$name2 =~ s/^\@//;
 		$name2 =~ /^(\S+)\/[12]/;
 		$name2 = $1;
-		#die "reads file error\n" if $name1 ne $name2;
-		if ($name1 ne $name2 ){
-			die "reads file error\n" if $name1 ne $name2;
-		}
+		die "reads file error. Line $.: name1:$name1 ne name2:$name2\n" if $name1 ne $name2;
 		if(exists $remove{$name1}){
 			<I1>;<I1>;<I1>;
 			<I2>;<I2>;<I2>;
@@ -246,7 +243,7 @@ sub get_paired_fa{
 		$name2 =~ s/\/[12]$//;
 		$seq2 = $temp[1];
 		$seq2 =~ s/\n//g;
-		die "reads file error\n" if $name1 ne $name2;
+		die "reads file error. Line $.: name1:$name1 ne name2:$name2\n" if $name1 ne $name2;
 		unless(exists $remove{$name1}){
 			print O1 "\>$name1/1\n$seq1\n";
 			print O2 "\>$name2/2\n$seq2\n";
