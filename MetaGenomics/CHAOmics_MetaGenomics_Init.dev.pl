@@ -248,7 +248,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-i1 $tmp_out";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.SE.se.gz\n";
 			}
-			print SIS "perl $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx 1&2> $dir_sp/$pfx.log\n";
+			print SIS "perl $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx &> $dir_sp/$sam.log\n";
 			print B3 "sh $dir_sI/$pfx.soap.sh\n";
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
 			close SIS;
