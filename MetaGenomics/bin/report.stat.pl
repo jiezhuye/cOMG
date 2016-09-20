@@ -3,7 +3,8 @@ use strict;
 
 my $usage = "USAGE:
 	perl <map> <work dir> <steps> > outputfile
-	map: seq_id\tsample_id.\n";
+	map: seq_id\tsample_id.
+	\@steps =(\"none\",\"filter\",\"rmhost\",\"soap\",\"abun\",\"soapALL\");\n";
 die $usage if @ARGV <3;
 my ($map,$wd,$step)=@ARGV;
 
@@ -27,7 +28,7 @@ while(<MAP>){
 	push @seqs,$a[1];
 }
 
-my @steps =("none","filter","rmhost","soap","abun");
+my @steps =("none","filter","rmhost","soap","abun","soapRepeat");
 if($step =~ /1/){
 	my @samples = @seqs;
 	while ($#samples >-1){
@@ -107,10 +108,10 @@ if($step =~ /5/){
 			my $log = shift @logs;
 			open SC,"tail -9 $path.soap.$log.log|" or die $!;               
 			chomp($_=<SC>);@heads = split /\s+|\t/;
-			@{$STAT{$sam}{"5.$log"}{'H'}} = ("$log.AllReads","$log.AllAligned");
-			$STAT{$sam}{"5.$log"}{"$log.AllReads"} = $heads[2];
+			@{$STAT{$sam}{"5.$log"}{'H'}} = ("$log.reads","$log.aligned");
+			$STAT{$sam}{"5.$log"}{"$log.reads"} = $heads[2];
 			chomp($_=<SC>);@vals = split /\s+|\t/;
-			$STAT{$sam}{"5.$log"}{"$log.ALLAligned"} = $vals[1];
+			$STAT{$sam}{"5.$log"}{"$log.aligned"} = $vals[1];
 			close SC;
 		}
 	}
