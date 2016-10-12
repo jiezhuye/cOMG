@@ -28,15 +28,21 @@ This command will produce their results in each directory:
 
 ## *Data pretreatment*
 
-```00.data/DemoAnalyst.comm.phenotype.tab``` 
+```
+00.data/DemoAnalyst.comm.phenotype.tab
+``` 
 
 contains the phenotype with samples involved for further analysis. Those outliers either in positive or negtive ion mode will be discarded.
 
-```00.data/DemoAnalyst_pos.pretreatment.res.comm.xls```
+```
+00.data/DemoAnalyst_pos.pretreatment.res.comm.xls
+```
 
 Positive ion features' intensity with sample keeped in both ion modes.
 
-```00.data/DemoAnalyst_neg.pretreatment.res.comm.xls```
+```
+00.data/DemoAnalyst_neg.pretreatment.res.comm.xls
+```
 
 Negative ion features' intensity with samples keeped in both ion modes.
 
@@ -101,11 +107,15 @@ This command will produce their results in each directory:
 
 ## *Correlation*
 
-```05.correlation/DemoAnalyst_selected.spearman.xls.spearman.tab``` 
+```
+05.correlation/DemoAnalyst_selected.spearman.xls.spearman.tab
+``` 
 
 ## GLM
 
-```06.GLM/DemoAnalyst_selected.logist.sta```
+```
+06.GLM/DemoAnalyst_selected.logist.sta
+```
 
  
 
