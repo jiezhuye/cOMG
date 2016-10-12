@@ -71,7 +71,7 @@ while(<IN>){
 		}elsif($position == 1){
 			$cfg{$s_name}{$ion_name}{$cfg_name} = ($cfg_name =~ /prf|phe|lst|csv/)?abs_path($cfg_value):$cfg_value;
 		}else {
-			$dcfg{$cfg_name} = ($cfg_name =~ /phe/)?abs_path($cfg_value):$cfg_value;
+			$dcfg{$cfg_name} = ($cfg_name =~ /phenotype|arg\.?\.phe/)?abs_path($cfg_value):$cfg_value;
 		}
 	}
 }
@@ -223,7 +223,7 @@ if ($func =~ /rank-sum/) {
 					}elsif(@todos == 3){
 						my($todo_ctr, $todo_case1, $todo_case2) = ($todos[0], $todos[1], $todos[2]);
 						my $step_sh = $ion_dir."/02.Kw.$todo_todo_phe.$todo_ctr-vs-$todo_case1-vs-$todo_case2.adj_$todo_adjust.$sample.$ion.sh";
-						open STEP,">$step_sh" or die "can't access to $step_sh";
+						open STEP,">$step_sh" or die "can't access to $step_sh\n$!\n";
 						print STEP "$Rscript $kw_R $dcfg{'arg.2.prf'} $dcfg{'arg.2.phe'} $todo_ctr $todo_case1 $todo_case2 $todo_todo_phe $todo_adjust $res_pfx.$todo_todo_phe.$todo_ctr-vs-$todo_case1-vs-$todo_case2.adj_$todo_adjust\_kw.xls 1>$res_pfx.$todo_todo_phe.$todo_ctr-vs-$todo_case1-vs-$todo_case2.adj_$todo_adjust\_kw.log \n";
 						print STEP "perl $kw_direction_P $res_pfx.$todo_todo_phe.$todo_ctr-vs-$todo_case1-vs-$todo_case2.adj_$todo_adjust\_kw.xls $res_pfx.$todo_todo_phe.$todo_ctr-vs-$todo_case1-vs-$todo_case2.adj_$todo_adjust\_kw.direction.xls\n";
 						print BATCH "sh $step_sh &\n";
