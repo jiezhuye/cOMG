@@ -8,7 +8,7 @@ my($in1,$in2)=@ARGV;
 
 my(%MAP);
 
-open IN1,"<$in1" || $!."$usage";
+open IN1,"<$in1" or die $!."$usage";
 while (<IN1>) {
 	chomp;
 	my @a=split;
@@ -16,7 +16,7 @@ while (<IN1>) {
 }
 close IN1;
 
-open IN2,"<$in2" || $!."$usage";
+open IN2,"<$in2" or die $!."$usage";
 while (<IN2>) {
 	chomp;
 	my @a=split;
