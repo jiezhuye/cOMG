@@ -23,7 +23,7 @@ open FQ,"gzip -dc $fq |",or die "error\n";
 open OUT,"|gzip >$pfx.clean.fq.gz" or die "error OUT\n";
 open STAT,"> $pfx.clean.stat_out",or die "error\n";
 
-my ($total, $remainQ, $sum_bp, $max_bp, $min_bp = (0, 0, 0, 0, 1e9);
+my ($total, $remainQ, $sum_bp, $max_bp, $min_bp) = (0, 0, 0, 0, 1e9);
 
 while(<FQ>){
 	#FQ info
