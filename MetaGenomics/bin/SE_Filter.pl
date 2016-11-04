@@ -30,7 +30,7 @@ while(<FQ>){
 	my ($seq,$num,$qual,$originLength,$Tlength,$len,$count,$avgQ) =();
 	chomp;
 	my @a =split;
-	(my $pfx1 = $a[0]) =~ s/\/[12]$//;
+	(my $fqID = $a[0]) =~ s/\/[12]$//;
 	chomp($seq = <FQ>);
 	chomp($num = <FQ>);
 	chomp($qual= <FQ>);
@@ -45,7 +45,7 @@ while(<FQ>){
 	$count = $seq=~tr/N/N/;
 	$avgQ  = &Qstat($qual,$Qf,"filter");
 	if($count <= $n && $len >= $lf && $avgQ >= $Qf){		# N number & length limit judgement
-		print OUT "$pfx length=$len\n$seq\n$num\n$qual\n";
+		print OUT "$fqID length=$len\n$seq\n$num\n$qual\n";
 		# stat
 		$remainQ ++;
 		$max_bp = ($max_bp > $len)?$max_bp:$len;
