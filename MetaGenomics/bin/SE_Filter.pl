@@ -3,7 +3,7 @@ use warnings;
 use strict;
 use File::Basename; 
 
-die &usage if @ARGV <=7;
+die &usage if @ARGV < 7;
 sub usage {
 	print <<USAGE;
 usage:
@@ -17,18 +17,14 @@ sub openMethod {shift;return(($_=~/\.gz$/)?"gzip -dc $_|":"$_")}
 
 ### BODY ###
 my ($fq,$pfx,$Qt,$l,$n,$Qf,$lf,$Qsys) = @ARGV;
-$Qsys ||= $Qsys;
+$Qsys ||= 33;
 
 open FQ,"gzip -dc $fq |",or die "error\n";
-open OUT,"|gzip >$pfx.clean.single.fq.gz" or die "error OUT\n";
+open OUT,"|gzip >$pfx.clean.fq.gz" or die "error OUT\n";
 open STAT,"> $pfx.clean.stat_out",or die "error\n";
 
-my @total = (0,0);
-my(@remainQ,@sum_bp)= ();
-my @max_bp = (0,0);
-my @min_bp = (10000,10000);
+my ($total, $remainQ, $sum_bp, $max_bp, $min_bp = (0, 0, 0, 0, 1e9);
 
-my %READ;
 while(<FQ>){
 	#FQ info
 	my ($seq,$num,$qual,$originLength,$Tlength,$len,$count,$avgQ) =();
@@ -38,7 +34,7 @@ while(<FQ>){
 	chomp($seq = <FQ>);
 	chomp($num = <FQ>);
 	chomp($qual= <FQ>);
-	$total[0] ++;
+	$total ++;
 	$originLength = length($seq);
 	# trim
 	$Tlength = &Qstat($qual,$Qt,"trim",$l);
@@ -51,21 +47,21 @@ while(<FQ>){
 	if($count <= $n && $len >= $lf && $avgQ >= $Qf){		# N number & length limit judgement
 		print OUT "$pfx length=$len\n$seq\n$num\n$qual\n";
 		# stat
-		$remainQ[0] ++;
-		$max_bp[0] = ($max_bp[0] > $len)?$max_bp[0]:$len;
-		$min_bp[0] = ($min_bp[0] < $len)?$min_bp[0]:$len;
-		$sum_bp[0] += $len;
+		$remainQ ++;
+		$max_bp = ($max_bp > $len)?$max_bp:$len;
+		$min_bp = ($min_bp < $len)?$min_bp:$len;
+		$sum_bp += $len;
 	}
 }
 close FQ;
 close OUT;
 
-my $avgL = $sum_bp[0] / $total[0];
-my $rate = $remainQ[0] / $total[0];
+my $avgL = $sum_bp / $total;
+my $rate = $remainQ / $total;
 my $tag = basename($pfx);
 
 print STAT "Total\tmax\tmin\tavg\t#remain\trate\tSampleTAG(trim=$l,Qt=$Qt,N=$n,Qf=$Qf,min=$lf)\n";
-print STAT "$total[0]\t$max_bp[0]\t$min_bp[0]\t$avgL\t$remainQ[0]\t$rate\t$tag\n";
+print STAT "$total\t$max_bp\t$min_bp\t$avgL\t$remainQ\t$rate\t$tag\n";
 
 close STAT;
 
