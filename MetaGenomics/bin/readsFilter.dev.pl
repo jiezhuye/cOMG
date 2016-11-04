@@ -3,20 +3,20 @@ use warnings;
 use strict;
 use File::Basename; 
 
-die &usage if @ARGV !=7;
+die &usage if @ARGV <=7;
 sub usage {
 	print <<USAGE;
 usage:
 pe pattern:
 #	perl $0 fq1,fq2 <prefix> <qt> <limit> <N num> <qf> <lf>
 se pattern:
-	perl $0 fq1 <prefix> <qt> <limit> <N num> <qf> <lf>
+	perl $0 fq1 <prefix> <qt> <limit> <N num> <qf> <lf> <avgQ>(Average Qual cutoff mode, option)
 e.g	perl $0 sample.fq clean 20 10 1 15 0 
 USAGE
 	exit;
 }
 
-my ($fq,$pfx,$qt,$l,$n,$qf,$lf) = @ARGV;
+my ($fq,$pfx,$qt,$l,$n,$qf,$lf,$avgQ) = @ARGV;
 my @fqs = split(",",$fq);
 my ($fq1,$fq2) = (@fqs == 2)?@fqs:($fq,$fq);
 if($fq1 eq $fq2){
@@ -57,7 +57,11 @@ while(<FQ1>){
 	$quality=substr($quality,0,$len);
 	# filter
 	$count=$seq=~tr/N/N/;
-	$Qscore = &Qstat($quality,$qf,"filter");
+	if($avgQ){
+		$Qscore = &Qstat($quality,$qf,"avgQ");
+	}else{
+		$Qscore = &Qstat($quality,$qf,"filter");
+	}
 	if($count <= $n && $len >= $lf && ($Qscore*2) <= length($quality)){		# N number & length limit judgement
 		$flag += 1;
 		$remainN[0] ++ ; 
@@ -161,6 +165,14 @@ sub Qstat {
 			last if($q>=$q_n || $c>=$c_n);
 			$c++;
 		}
+	}elsif($method eq "avgQ"){
+		for(my $i=length($q_l)-1;$i>=0;$i--){
+			my $q=substr($q_l,$i,1);
+			$q=ord$q;
+			$q=$q-33;
+			$c += $q;
+		}
+		$c = ($c/length($q_l) >= $q_n)?0:length($q_l);
 	}
 	return($c);
 }
