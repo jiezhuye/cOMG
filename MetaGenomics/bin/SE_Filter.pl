@@ -85,7 +85,8 @@ sub Qstat {
 			$q=$q -$Qsys;
 			$c += $q;
 		}
-		$c = ($c/length($q_l) >= $q_n)?0:length($q_l);
+		$c = $c/length($q_l);
+		#$c = ($c/length($q_l) >= $q_n)?length($q_l):0;
 	}
 	return($c);
 }
