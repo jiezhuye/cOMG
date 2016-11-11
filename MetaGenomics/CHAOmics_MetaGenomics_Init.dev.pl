@@ -91,6 +91,7 @@ my $bin = "$Bin/bin";
 #my $s_trim   = "$bin/trimReads.pl";
 #my $s_filter = "$bin/filterReads.pl";
 my $s_clean  = "$bin/readsFilter.dev.pl";
+my $s_SEclean= "$bin/SE_Filter.pl";
 #my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script goes wrong on some nodes
 my $s_rm     = "$bin/rmhost_v1.2.pl";
 my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
@@ -221,7 +222,8 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = $fq1;
 				$tmp_out = "$dir_c/$pfx.clean.fq.gz";
 			}
-			print SIC "perl $s_clean $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'avgQ'}\n";
+			my $exec = ($pattern =~ /SE|se/)?$s_SEclean:$s_clean;
+			print SIC "perl $exec $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'PhQ'}\n";
 			print B1 "sh $dir_sI/$pfx.clean.sh\n";
 			print SSC "sh $dir_sI/$pfx.clean.sh\n";
 			close SIC;
