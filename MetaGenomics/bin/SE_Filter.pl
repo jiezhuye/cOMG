@@ -56,7 +56,7 @@ while(<FQ>){
 close FQ;
 close OUT;
 
-my $avgL = $sum_bp / $total;
+my $avgL = $sum_bp / $remainQ;
 my $rate = $remainQ / $total;
 my $tag = basename($pfx);
 
