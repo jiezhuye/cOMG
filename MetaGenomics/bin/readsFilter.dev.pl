@@ -12,6 +12,13 @@ pe pattern:
 se pattern:
 	perl $0 fq1 <prefix> <qt> <limit> <N num> <qf> <lf> <avgQ>(Average Qual cutoff mode, option)
 e.g	perl $0 sample.fq clean 20 10 1 15 0 
+		prefix	path/to/output/file_prefix
+		qt		PhredQual cutoff for trim from tail
+		limit	maximum trim length
+		N num	N base tolerance
+		qf		PhredQual cutoff for filter. The average Qual lower than qf will be discarded.
+		lf		minimun length of trimed reads.
+		avgQ	
 USAGE
 	exit;
 }
