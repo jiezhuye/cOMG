@@ -67,11 +67,12 @@ close OUT;
 my $avgL = $sum_bp / $remainQ;
 my $rate = $remainQ / $total;
 my $tag = basename($pfx);
-my $debugHead = ($debug)?"\tN>$n|Len<$lf|PQ<$Qf|N+Len|Len+PQ|HOMER":"";
-my $debugRes  = ($debug)?"\t$DEBUG{1}|$DEBUG{2}|$DEBUG{4}|$DEBUG{3}|$DEBUG{6}|$DEBUG{7}":"";
+my $debugHead = ($debug)?"\tN>$n|Len<$lf|PQ<$Qf|N+Len|N+PQ|Len+PQ|HOMER":"";
+for(1..7){$DEBUG{$_}||=0};
+my $debugRes  = ($debug)?"\t$DEBUG{1}|$DEBUG{2}|$DEBUG{4}|$DEBUG{3}|$DEBUG{5}|$DEBUG{6}|$DEBUG{7}":"";
 
 print STAT "Total\tmax\tmin\tavg\t#remain\trate\tSampleTAG(trim=$l,Qt=$Qt,N=$n,Qf=$Qf,min=$lf)$debugHead\n";
-print STAT "$total\t$max_bp\t$min_bp\t$avgL\t$remainQ\t$rate\t$tag$debugHead\n";
+print STAT "$total\t$max_bp\t$min_bp\t$avgL\t$remainQ\t$rate\t$tag$debugRes\n";
 
 close STAT;
 
