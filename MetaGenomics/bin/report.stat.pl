@@ -94,12 +94,12 @@ if($step =~ /4/){
 	}   
 }
 
-if($step =~ /5/){
+if($step =~ /A/){
 	my @samples = @seqs;
 	while ($#samples >-1){
 		my(@heads,@vals)=();
 		my $sam = shift @samples;
-		my $path = "$wd/soapALL/$MAP{1}{$sam}.gene.build/$sam";
+		my $path = "$wd/soapA/$MAP{1}{$sam}.gene.build/$sam";
 		my @logs = ();
 		if (-e "$path.soap.SE.log"){push @logs,"SE"}
 		if (-e "$path.soap.pair.log"){push @logs,"pair"}

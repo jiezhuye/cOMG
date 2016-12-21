@@ -16,7 +16,7 @@ USAGE
 sub openMethod {shift;return(($_=~/\.gz$/)?"gzip -dc $_|":"$_")}
 
 ### BODY ###
-my ($fq,$pfx,$Qt,$l,$n,$Qf,$lf,$Qsys) = @ARGV;
+my ($fq,$pfx,$Qt,$l,$n,$Qf,$lf,$Qsys,$debug) = @ARGV;
 $Qsys ||= 33;
 
 open FQ,"gzip -dc $fq |",or die "error\n";
@@ -24,6 +24,7 @@ open OUT,"|gzip >$pfx.clean.fq.gz" or die "error OUT\n";
 open STAT,"> $pfx.clean.stat_out",or die "error\n";
 
 my ($total, $remainQ, $sum_bp, $max_bp, $min_bp) = (0, 0, 0, 0, 1e9);
+my %DEBUG if $debug;
 
 while(<FQ>){
 	#FQ info
@@ -51,17 +52,26 @@ while(<FQ>){
 		$max_bp = ($max_bp > $len)?$max_bp:$len;
 		$min_bp = ($min_bp < $len)?$min_bp:$len;
 		$sum_bp += $len;
+	} elsif($debug){
+		#discard for N|discard for length|discard for PQ
+		my $point =0;
+		$point += ($count <= $n )?0:1;
+		$point += ($len   >= $lf)?0:2;
+		$point += ($avgQ  >= $Qf)?0:4;
+		$DEBUG{$point} += 1;
 	}
 }
 close FQ;
 close OUT;
 
-my $avgL = $sum_bp / $total;
+my $avgL = $sum_bp / $remainQ;
 my $rate = $remainQ / $total;
 my $tag = basename($pfx);
+my $debugHead = ($debug)?"\tN>$n|Len<$lf|PQ<$QF|N+Len|Len+PQ|HOMER":"";
+my $debugRes  = ($debug)?"\t$DEBUG{1}|$DEBUG{2}|$DEBUG{4}|$DEBUG{3}|$DEBUG{6}|$DEBUG{7}":"";
 
-print STAT "Total\tmax\tmin\tavg\t#remain\trate\tSampleTAG(trim=$l,Qt=$Qt,N=$n,Qf=$Qf,min=$lf)\n";
-print STAT "$total\t$max_bp\t$min_bp\t$avgL\t$remainQ\t$rate\t$tag\n";
+print STAT "Total\tmax\tmin\tavg\t#remain\trate\tSampleTAG(trim=$l,Qt=$Qt,N=$n,Qf=$Qf,min=$lf)$debugHead\n";
+print STAT "$total\t$max_bp\t$min_bp\t$avgL\t$remainQ\t$rate\t$tag$debugHead\n";
 
 close STAT;
 
