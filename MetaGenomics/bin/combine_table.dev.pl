@@ -6,7 +6,7 @@ unless(3<=@ARGV) {
     exit;
 }
 ################################################################################
-my($list_f,$row,$out,$alpha) = @ARGV;
+my($list_f,$row,$out,$alpha,$beta) = @ARGV;
 my(@order,%list,@info,$i,%class,%cover,%Count,%sum_abun);
 ################################################################################
 open IN,"<$list_f" || die "read $list_f $!\n";
@@ -26,14 +26,18 @@ for($i=0;$i<@order;++$i) {
     while(<IN>) {
         chomp;
         @info=split /\t/;
-		if ($.==1) {
-			next unless $info[$row] =~ /\d/;
-		}
-        $class{$info[0]} .= "\t".$info[$row];
-		$cover{$info[0]} ||= 0;
-		$sum_abun{$info[0]} ||=0;
-		$Count{$i} ||= 0;
-		if ($info[$row] > 0){ $cover{$info[0]} ++ ; $Count{$i} ++ ;$sum_abun{$info[0]} += $info[$row] };
+	if ($.==1) {
+		next unless &checkNumber($info[$row]);
+	}
+	if($beta){
+		$class{$info[0]}{$i} = "\t".$info[$row];
+	}else{
+	        $class{$info[0]} .= "\t".$info[$row];
+	}
+	$cover{$info[0]} ||= 0;
+	$sum_abun{$info[0]} ||=0;
+	$Count{$i} ||= 0;
+	if ($info[$row] > 0){ $cover{$info[0]} ++ ; $Count{$i} ++ ;$sum_abun{$info[0]} += $info[$row] };
     }
     close IN;
 }
@@ -55,12 +59,24 @@ foreach my $index(@index){
 #		$cover{$index}=1 unless $cover{$index} > 0;
 #	}
 	my $avg = ($sum_abun{$index} >0 )?($sum_abun{$index} / $cover{$index}):$sum_abun{$index};
-    print OT $index,$class{$index},"\n";
+	if($beta){
+		print OT $index;
+		for($i=0;$i<@order;++$i) {
+			$class{$index}{$i} ||= "\t0";
+			print OT $class{$index}{$i};
+		}
+		print OT "\n";
+	}else{
+		print OT $index,$class{$index},"\n";
+	}
 	print CrT "$index\t$cover{$index}\t$avg\n";
 }
 close OT;
 close CrT;
 ################################################################################
+sub checkNumber{    
+    return shift =~ /^[+\-]?([1-9]\d*|0)(\.\d+)?([eE][+\-]?([1-9]\d*|0)(\.\d+)?)?$/;
+}
 sub usage {
     print STDERR<<USAGE;
 Description
