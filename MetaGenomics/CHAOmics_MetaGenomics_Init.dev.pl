@@ -58,8 +58,9 @@ GetOptions(
 	"v|version:s" => \$version,
 );
 my $pattern = $ARGV[0];
+print &version && exit if defined $version;
 print &usage && exit if ( (!defined $path_f)||(defined $help) );
-die &version if defined $version;
+
 
 # ####################
 # initialize variables
@@ -304,10 +305,9 @@ exit;
 # ####################
 sub version {
 	print <<VERSION;
-	version:	v0.12
-	update:		20160111
-	author:		fangchao\@genomics.cn
-
+    version:    v0.12
+    update:     20160111
+    author:     fangchao\@genomics.cn
 VERSION
 };
 
