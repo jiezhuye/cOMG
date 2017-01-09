@@ -4,3 +4,4 @@ t/
 source/
 test/
 *test*
+*.index.*
