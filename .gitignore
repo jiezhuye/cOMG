@@ -2,3 +2,5 @@
 
 t/
 source/
+test/
+*test*
