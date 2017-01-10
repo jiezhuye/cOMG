@@ -8,3 +8,6 @@ gzip -d IGC.100.demo.fa
 2bwt-builder IGC.100.demo.fa
 
 grep ">" IGC.100.demo.fa|sed 's/>//'|awk '{print $1}' > gene.name.lst
+
+gzip -d human.chr11.fa.gz
+2bwt-builder human.chr11.fa
