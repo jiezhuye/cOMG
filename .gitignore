@@ -5,3 +5,8 @@ source/
 test/
 *test*
 *.index.*
+tmp
+*tmp
+tmp*
+*tmp*
+
