@@ -2,11 +2,7 @@
 
 t/
 source/
-test/
 *test*
-*.index.*
-tmp
-*tmp
-tmp*
+*index*
 *tmp*
 
