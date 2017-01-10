@@ -249,7 +249,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 		if ($step =~ /3/){
 			open SIS,">$dir_sI/$pfx.soap.sh";
 			my $seq = "";
-			my $par = "m=$CFG{'min'},x=$CFG{'max'},r=0,l=30,M=4,S,p=$CFG{'pro'},v=5,S,c=0.95";
+			my $par = "m=$CFG{'min'},x=$CFG{'max'},r=2,l=30,M=4,S,p=$CFG{'pro'},v=5,S,c=0.95";
 			if (@fs > 1){
 				$seq = "-i1 $fs[0] -i2 $fs[1] -i3 $fs[2]";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.pair.pe.gz\n";
