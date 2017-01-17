@@ -3,22 +3,19 @@ use warnings;
 use strict;
 use Getopt::Long;
 use File::Basename;
-use FindBin qw($Bin);
+#use FindBin qw($Bin);
+use FindBin qw($RealBin);
 use Cwd 'abs_path';
 
 my $cwd = abs_path;
-#my($f,$f_ins,$s,$out_dir) = @ARGV;
-#my $usage = "usage: perl $0 <path_file> <ins_file> <steps(1234)> <output dir>
-#	path_file should contained such column:
-	#sample_name\t#trim_quality\t#trim_length_cut\t#N_cutoff\t#50\%ofQ_control\t#path
-	#sample1\t20\t10\t1\t15\t/path/to/fq/file
-#";
+my $Bin = $RealBin;
 sub usage {
 	print <<USAGE;
 usage:
-	perl $0 <pe|se> [options]
+	perl $0 <pe|se|config> [options]
 pattern
 	pe|se		pair end | single end
+    config      print default config file in cwd.
 options:
 	-p|path		:[essential]sample path file (SampleID|fqID|fqPath)
 	-i|ins		:[essential for pair-end seq]insert info file
@@ -58,6 +55,10 @@ GetOptions(
 	"v|version:s" => \$version,
 );
 my $pattern = $ARGV[0];
+if($pattern eq "config"){
+    `cp $RealBin/default.cfg $cwd/`;
+    exit
+}
 print &version && exit if defined $version;
 print &usage && exit if ( (!defined $path_f)||(defined $help) );
 
@@ -68,8 +69,9 @@ print &usage && exit if ( (!defined $path_f)||(defined $help) );
 $step    ||= "1234";
 $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
 $path_f = abs_path($path_f);
-$ins_f = "SE" if $pattern =~ /se/i;
-$ins_f  = abs_path($ins_f) if $ins_f ne "SE";
+#$ins_f = "SE" if $pattern =~ /se/i;
+#$ins_f  = abs_path($ins_f) if $ins_f ne "SE";
+$ins_f = "SE";
 
 if (defined $config){
 	if($config =~ /\.cfg$/){
@@ -93,6 +95,7 @@ my $bin = "$Bin/bin";
 #my $s_filter = "$bin/filterReads.pl";
 my $s_clean  = "$bin/readsFilter.dev.pl";
 my $s_SEclean= "$bin/SE_Filter.pl";
+my $s_PEclean= "$bin/PE_Filter.pl";
 #my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script goes wrong on some nodes
 my $s_rm     = "$bin/rmhost_v1.2.pl";
 my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
@@ -131,30 +134,13 @@ while (<IN>){
 	push @{$SAM{$sam}{$pfx}}, $path;
 }
 ###############################
-$CFG{'Qt'}  ||= 20;
-$CFG{'l'}   ||= 10;
-$CFG{'N'}   ||= 1;
-$CFG{'Qf'}  ||= 15;
-$CFG{'lf'}  ||= 0;
-$CFG{'min'}  ||= 226;
-$CFG{'max'}  ||= 426;
-$CFG{'q'}   ||= "st.q";
-$CFG{'P'}   ||= "st_ms";
-$CFG{'pro'} ||= 8;
-$CFG{'vf1'} ||= "0.3G";
-$CFG{'vf2'} ||= "8G";
-$CFG{'vf3'} ||= "16G";
-$CFG{'vf4'} ||= "10G";
-$CFG{'m'}   ||= 99;
-$CFG{'r'}   ||= 1;
 
 ## start <- top exec batch scripts
 open C1,">$out_dir/qsub_all.sh";
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.c -d $dir_s/qsub_1 -l vf=$CFG{'vf1'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.clean.sh\n" if $step =~ /1/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_s/qsub_2 -l vf=$CFG{'vf2'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.rmhost.sh\n" if $step =~ /2/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_s/qsub_3 -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.soap.sh\n" if $step =~ /3/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_s/qsub_A -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.soapA.sh\n"     if $step =~ /A/;
-print C1 "perl /home/fangchao/bin/qsub_all.pl -N B.a -d $dir_s/qsub_4 -l vf=$CFG{'vf4'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_s/batch.abun.sh\n" if $step =~ /4/;
+print C1 "sh $dir_s/batch.clean.sh\n" if $step =~ /1/;
+print C1 "sh $dir_s/batch.rmhost.sh\n" if $step =~ /2/;
+print C1 "sh $dir_s/batch.soap.sh\n" if $step =~ /3/;
+print C1 "sh $dir_s/batch.abun.sh\n" if $step =~ /4/;
 close C1;
 ## done! <- top exec batch scripts
 #
@@ -172,23 +158,19 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	open LINE,"> $dir_sS/$sam.$step.sh";
 	if ($step =~ /1/){             
 		open SSC,">$dir_sS/$sam.clean.sh";
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.c -d $dir_sS/qsub_$sam.1 -l vf=$CFG{'vf1'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.clean.sh\n";
+		print LINE "sh $dir_sS/$sam.clean.sh\n";
 	}                              
 	if ($step =~ /2/){
 		open SSR,">$dir_sS/$sam.rmhost.sh";
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.r -d $dir_sS/qsub_$sam.2 -l vf=$CFG{'vf2'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.rmhost.sh\n";
+		print LINE "sh $dir_sS/$sam.rmhost.sh\n";
 	}                              
 	if ($step =~ /3/){             
 		open SSS,">$dir_sS/$sam.soap.sh";
 		open LIST,">$dir_sp/$sam.soap.list";
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_sS/qsub_$sam.3 -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.soap.sh\n";
-	}
-	if ($step =~ /A/){
-		open SSA,">$dir_sS/$sam.soapA.sh";
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.s -d $dir_sS/qsub_$sam.A -l vf=$CFG{'vf3'},p=$CFG{'pro'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.soapA.sh\n";
+        print LINE "sh $dir_sS/$sam.soap.sh\n";
 	}
 	if ($step =~ /4/){
-		print LINE "perl /home/fangchao/bin/qsub_all.pl -N B.a -d $dir_sS/qsub_$sam.4 -l vf=$CFG{'vf4'} -q $CFG{'q'} -P $CFG{'P'} -r $CFG{'r'} -m $CFG{'m'} $dir_sS/$sam.abun.sh\n"; 
+        print LINE "sh $dir_sS/$sam.abun.sh\n"; 
 		print B4 "sh $dir_sS/$sam.abun.sh\n";
 	}
 	close LINE;                    
@@ -196,17 +178,12 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	my $list ="";
 	my @FQS = sort keys %{$SAM{$sam}};
 	foreach my $pfx(sort keys %{$SAM{$sam}}){
-#	while(@FQS >0){ # Fastqs processed under this loop
-#		my @fqs = ($pattern eq "pe")?(shift @FQS, shift @FQS):(shift @FQS);
 		my @fs = @{$SAM{$sam}{$pfx}};
 		our($fq1,$fq2,$fqS)=();;
 		$fq1 = $fs[0];
 		$tmp_out = $fq1;
 		if (@fs > 1){
 			$fq2 = $fs[1] or die "miss fq2 under pe pattern. $!\n";
-#			my @a = $fs[0] =~/^(\S+)([.-_])([12ab])$/;
-#			my @b = $fs[1] =~/^(\S+)([.-_])([12ab])$/;
-#			die "Does $fs[0] and $fs[1] seems not belong to a pair fq? Make sure they got same string before [.-_][12ab]\n" if $a[0] ne $b[0];
 			if (@fs > 2){
 				$fqS = $fs[2];
 			}
@@ -223,7 +200,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = $fq1;
 				$tmp_out = "$dir_c/$pfx.clean.fq.gz";
 			}
-			my $exec = ($pattern =~ /SE|se/)?$s_SEclean:$s_clean;
+			my $exec = ($pattern =~ /SE|se/)?$s_SEclean:$s_PEclean;
 			print SIC "perl $exec $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'PhQ'}\n";
 			print B1 "sh $dir_sI/$pfx.clean.sh\n";
 			print SSC "sh $dir_sI/$pfx.clean.sh\n";
@@ -264,24 +241,11 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
 			close SIS;
 		}
-		if ($step =~ /A/){
-			open SIS,">$dir_sI/$pfx.soapA.sh";
-			my $seq = "";
-			my $par = "m=$CFG{'min'},x=$CFG{'max'},r=2,l=30,M=4,S,p=$CFG{'pro'},v=5,S,c=0.95";
-			if (@fs > 1){
-				$seq = "-i1 $fs[0] -i2 $fs[1] -i3 $fs[2]";
-			}else{
-				$seq = "-i1 $tmp_out";
-			}
-			print SIS "perl $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sA -s $sam -p $pfx &> $dir_sA/$sam.log\n";
-			print BA "sh $dir_sI/$pfx.soapA.sh\n";
-			print SSA "sh $dir_sI/$pfx.soapA.sh\n";
-			close SIS;
-		}
 	}
 	if ($step =~ /3/){print LIST $list; close LIST;};
-	close SSA if $step =~ /A/;
-	close SSC; close SSR; close SSS;
+	close SSC;
+    close SSR;
+    close SSS;
 
 	if ($step =~ /4/){ # Since step4 contains abundance building which needs operated on sample level, I've got to put them here.
 		open ABUN,">$dir_sS/$sam.abun.sh";
@@ -305,8 +269,8 @@ exit;
 # ####################
 sub version {
 	print <<VERSION;
-    version:    v0.15
-    update:     20160111
+    version:    v0.15-dev
+    update:     20160111-20171117
     author:     fangchao\@genomics.cn
 VERSION
 };
