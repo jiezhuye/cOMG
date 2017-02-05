@@ -73,13 +73,25 @@ if($step =~ /3/){
 		if (-e "$path.soap.single.log"){push @logs,"single"}
 		while($#logs>-1){
 			my $log = shift @logs;
-			open SC,"tail -9 $path.soap.$log.log|" or die $!;               
-			chomp($_=<SC>);@heads = split /\s+|\t/;
-			@{$STAT{$sam}{"3.$log"}{'H'}} = ("$log.reads","$log.aligned");
-			$STAT{$sam}{"3.$log"}{"$log.reads"} = $heads[2];
-			chomp($_=<SC>);@vals = split /\s+|\t/;
-			$STAT{$sam}{"3.$log"}{"$log.aligned"} = $vals[1];
-			close SC;
+            if($log eq "pair"){
+                open SC,"tail -10 $path.soap.$log.log|" or die $!;
+                @{$STAT{$sam}{"3.$log"}{'H'}} = ("$log.total","$log.paired","$log.singled");
+                chomp($_=<SC>);$_ =~ /(\d+)/;
+                $STAT{$sam}{"3.$log"}{"$log.total"} = $1;
+                chomp($_=<SC>);$_ =~ /(\d+)/;
+                $STAT{$sam}{"3.$log"}{"$log.paired"} = $1;
+                chomp($_=<SC>);$_ =~ /(\d+)/;
+                $STAT{$sam}{"3.$log"}{"$log.singled"} = $1;
+                close SC;
+            }else{
+    			open SC,"tail -9 $path.soap.$log.log|" or die $!;
+                @{$STAT{$sam}{"3.$log"}{'H'}} = ("$log.total","$log.aligned");
+    			chomp($_=<SC>);$_ =~ /(\d+)/;
+                $STAT{$sam}{"3.$log"}{"$log.total"} = $1;
+                chomp($_=<SC>);$_ =~ /(\d+)/;
+                $STAT{$sam}{"3.$log"}{"$log.aligned"} = $1;
+			    close SC;
+            }
 		}
 	}
 }

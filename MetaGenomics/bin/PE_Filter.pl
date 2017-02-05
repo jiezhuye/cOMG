@@ -8,7 +8,7 @@ sub usage {
 	print <<USAGE;
 usage:
 pe pattern:
-#	perl $0 fq1,fq2 <outdir> <qt> <limit> <N num> <qf> <lf> <PhQ>
+#	perl $0 fq1,fq2 <outdir> <qt> <limit> <N num> <qf> <lf> <PhQ> <discard>
 e.g	perl $0 sample_1.fq,sample_2.fq clean 20 10 1 15 0 
 		dir	    path/to/output/
 		qt		PhredQual cutoff for trim from tail
@@ -17,18 +17,27 @@ e.g	perl $0 sample_1.fq,sample_2.fq clean 20 10 1 15 0
 		qf		PhredQual cutoff for filter. The average Qual lower than qf will be discarded.
 		lf		minimun length of trimed reads.
 		PhQ     Qual system(33|64)
+        discard output discard reads  
 USAGE
 	exit;
 }
+sub openMethod {$_=shift;return(($_=~/\.gz$/)?"gzip -dc $_|":"$_")}
 
-my ($fq,$out,$qt,$l,$n,$qf,$lf,$PhQ) = @ARGV;
+my ($fq,$out,$qt,$l,$n,$qf,$lf,$PhQ,$discard,$suffix) = @ARGV;
 my @fqs = split(",",$fq);
 my ($fq1,$fq2) = @fqs;
-open FQ1,"gzip -dc $fq1 |",or die "error\n";
-open FQ2,"gzip -dc $fq2 |",or die "error\n";
-open OUT1,"|gzip >$out.clean.1.fq.gz" or die "error OUT1\n";
-open OUT2,"|gzip >$out.clean.2.fq.gz" or die "error OUT2\n";
-open OUT3,"|gzip >$out.clean.single.fq.gz" or die "error OUT3\n";
+open FQ1, &openMethod($fq1) or die "error\n";
+open FQ2, &openMethod($fq2) or die "error\n";
+##
+$suffix ||= 'fq.gz';
+my $method=($suffix eq "fq")?'>':'|gzip >';
+
+open OUT1,"$method $out.clean.1.$suffix" or die "error OUT1\n";
+open OUT2,"$method $out.clean.2.$suffix" or die "error OUT2\n";
+open OUT3,"$method $out.clean.single.$suffix" or die "error OUT3\n";
+if($discard){
+    open DIS,"|gzip >$out.clean.dirty.fq.gz" or die "error DIS\n";
+}
 open STAT,"> $out.clean.stat_out",or die "error\n";
 
 my @total = (0,0);
@@ -59,13 +68,11 @@ while(<FQ1>){
     # filter
     $count=$seq=~tr/N/N/;
     $Qscore = &Qstat($quality,$qf,"filter");
+    $readsSEQ1 = "$out1/1 length=$len\n$seq\n$num\n$quality\n";
     if($count <= $n && $len >= $lf && $Qscore >= $qf){		# N number & length limit judgement
         $flag += 1;
         $remainN[0] ++ ; 
         # filter more
-        my $out = "$out1\/1";
-        $readsSEQ1 = "$out length=$len\n$seq\n$num\n$quality\n";
-        #print OUT1 $readsSEQ;
         $remainQ[0] ++;
         $max_bp[0] = ($max_bp[0] > $len)?$max_bp[0]:$len;
         $min_bp[0] = ($min_bp[0] < $len)?$min_bp[0]:$len;
@@ -90,10 +97,10 @@ while(<FQ1>){
     # filter
     $count=$seq=~tr/N/N/;
     $Qscore = &Qstat($quality,$qf,"filter");
-    if($count <= $n && $len >= $lf && $Qscore => $qf){
+    $readsSEQ2 = "$out2\/2 length=$len\n$seq\n$num\n$quality\n";
+    if($count <= $n && $len >= $lf && $Qscore >= $qf){
         $flag += 2;
         $remainN[1] ++ ;
-        $readsSEQ2 = "$out2\/2 length=$len\n$seq\n$num\n$quality\n";
         $remainQ[1] ++;
         $max_bp[1] = ($max_bp[1] > $len)?$max_bp[1]:$len;
         $min_bp[1] = ($min_bp[1] < $len)?$min_bp[1]:$len;
@@ -103,8 +110,10 @@ while(<FQ1>){
     if($flag == 1){
         $single1 += 1;
         print OUT3 $readsSEQ1;
+        print DIS $readsSEQ2 if $discard;
     }elsif($flag == 2){
         $single2 += 1;
+        print DIS $readsSEQ1 if $discard;
         print OUT3 $readsSEQ2;
     }elsif($flag == 3){
         $paired += 1;
@@ -117,6 +126,7 @@ close FQ2;
 close OUT1;
 close OUT2;
 close OUT3;
+close DIS if $discard;
 
 my $avg1 = $sum_bp[0] / $total[0];
 my $avg2 = $sum_bp[1] / $total[1] if $total[1] >0 ;
