@@ -9,13 +9,15 @@ use Cwd 'abs_path';
 
 my $cwd = abs_path;
 my $Bin = $RealBin;
+my $cmd = basename $0;
 sub usage {
 	print <<USAGE;
 usage:
-	perl $0 <pe|se|config> [options]
+	$cmd  <pe|se|config|cmd> [options]
 pattern
 	pe|se		pair end | single end
     config      print default config file in cwd.
+    cmd         call sub scripts in bin directory.(annoProfile.pl)
 options:
 	-p|path		:[essential]sample path file (SampleID|fqID|fqPath)
 	-i|ins		:[essential for pair-end seq]insert info file
@@ -55,9 +57,17 @@ GetOptions(
 	"v|version:s" => \$version,
 );
 my $pattern = $ARGV[0];
+print &usage && exit if (!defined $pattern);
 if($pattern eq "config"){
     `cp $RealBin/default.cfg $cwd/`;
     exit
+}
+if ($pattern !~ /pe|se|config/){
+    my $bin = "$Bin/bin";
+    my $int = ($pattern=~/\.pl$/)?'perl ':'./';
+    print "$int$bin/@ARGV\n";
+    system("$int$bin/@ARGV");
+    exit;
 }
 print &version && exit if defined $version;
 print &usage && exit if ( (!defined $path_f)||(defined $help) );
