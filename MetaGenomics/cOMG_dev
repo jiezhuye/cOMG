@@ -97,14 +97,15 @@ if (defined $config){
 		}
 	}
 }
-
+$CFG{'min'}=0;
+$CFG{'max'}=1000;
 
 # scripts under bin
 my $bin = "$Bin/bin";
 #my $s_trim   = "$bin/trimReads.pl";
 #my $s_filter = "$bin/filterReads.pl";
 my $s_clean  = "$bin/readsFilter.dev.pl";
-my $s_SEclean= "$bin/SE_Filter.pl";
+my $s_SEclean= "$bin/OAs1_trim.pl";
 my $s_PEclean= "$bin/PE_Filter.pl";
 #my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script goes wrong on some nodes
 my $s_rm     = "$bin/rmhost_v1.2.pl";
@@ -206,12 +207,12 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			if (@fs eq 2 ){
 				$seq = "$fq1,$fq2";
 				@fs = ("$dir_c/$pfx.clean.1.fq.gz","$dir_c/$pfx.clean.2.fq.gz","$dir_c/$pfx.clean.single.fq.gz");
+				print SIC "perl $s_PEclean $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'PhQ'}\n";
 			}else{
 				$seq = $fq1;
 				$tmp_out = "$dir_c/$pfx.clean.fq.gz";
+				print SIC "perl $s_SEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'}\n";
 			}
-			my $exec = ($pattern =~ /SE|se/)?$s_SEclean:$s_PEclean;
-			print SIC "perl $exec $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'PhQ'}\n";
 			print B1 "sh $dir_sI/$pfx.clean.sh\n";
 			print SSC "sh $dir_sI/$pfx.clean.sh\n";
 			close SIC;
