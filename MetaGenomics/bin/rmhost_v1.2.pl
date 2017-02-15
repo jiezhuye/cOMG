@@ -133,11 +133,13 @@ else{
 		$shell .= "-S ";
 	}
     if(-x 'soap2.2d'){
-        $shell .= "-o $opt_p.rmhost.soap -u $opt_p.rmhost.soap.fq 2> $opt_p.rmhost.soap.log";
+        $shell .= "-o $opt_p.rmhost.soap -u $clean1 2> $opt_p.rmhost.soap.log";
         if(system($shell)){
             print STDERR "single read align host error\n";
             exit(1);
         }
+		system("gzip $clean1");
+	
     } else {
     	$shell .= "-o $opt_p.rmhost.soap 2> $opt_p.rmhost.soap.log";
     	if(system($shell)){
