@@ -127,22 +127,31 @@ if($opt_b){
 	}
 }
 else{
+    $soap_path='soap2.2d' if -x 'soap2.2d';
 	$shell = "$soap_path -a $opt_a -D $host -M $opt_D -l $opt_s -r $opt_r -n $opt_n -v $opt_v -c $opt_i -p $opt_t ";
 	if($opt_f eq "Y"){
 		$shell .= "-S ";
 	}
-	$shell .= "-o $opt_p.rmhost.soap 2> $opt_p.rmhost.soap.log";
-	if(system($shell)){
-		print STDERR "single read align host error\n";
-		exit(1);
-	}
-	&get_remove("$opt_p.rmhost.soap");
-	if($opt_q){
-		&get_single_fq($opt_a, $clean1);
-	}
-	else{
-		&get_single_fa($opt_a, $clean1);
-	}
+    if(-x 'soap2.2d'){
+        $shell .= "-o $opt_p.rmhost.soap -u $opt_p.rmhost.soap.fq 2> $opt_p.rmhost.soap.log";
+        if(system($shell)){
+            print STDERR "single read align host error\n";
+            exit(1);
+        }
+    } else {
+    	$shell .= "-o $opt_p.rmhost.soap 2> $opt_p.rmhost.soap.log";
+    	if(system($shell)){
+    		print STDERR "single read align host error\n";
+    		exit(1);
+    	}
+    	&get_remove("$opt_p.rmhost.soap");
+    	if($opt_q){
+    		&get_single_fq($opt_a, $clean1);
+    	}
+    	else{
+    		&get_single_fa($opt_a, $clean1);
+    	}
+    }
 }
 
 open O, ">$stat" or die "can't open file $stat $!\n";
