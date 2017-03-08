@@ -63,10 +63,10 @@ if($pattern eq "config"){
     exit
 }
 if ($pattern !~ /pe|se|config/){
-    my $bin = "$Bin/bin";
-    my $int = ($pattern=~/\.pl$/)?'perl ':'./';
-    print "$int$bin/@ARGV\n";
-    system("$int$bin/@ARGV");
+	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
+    my $int = ($pattern=~/\.pl$/)?'perl ':'';
+    print "$int$path/@ARGV\n";
+    system("$int$path/@ARGV");
     exit;
 }
 print &version && exit if defined $version;
@@ -147,7 +147,7 @@ while (<IN>){
 ###############################
 
 ## start <- top exec batch scripts
-open C1,">$out_dir/qsub_all.sh";
+open C1,">$out_dir/RUN.batch.sh";
 print C1 "sh $dir_s/batch.clean.sh\n" if $step =~ /1/;
 print C1 "sh $dir_s/batch.rmhost.sh\n" if $step =~ /2/;
 print C1 "sh $dir_s/batch.soap.sh\n" if $step =~ /3/;
@@ -156,7 +156,7 @@ close C1;
 ## done! <- top exec batch scripts
 #
 ## start <- contents of each batch scripts
-open C2,">$out_dir/linear.$step.sh"; 
+open C2,">$out_dir/RUN.linear.$step.sh"; 
 open B1,">$dir_s/batch.clean.sh";
 open B2,">$dir_s/batch.rmhost.sh";
 open B3,">$dir_s/batch.soap.sh";
@@ -169,19 +169,35 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	open LINE,"> $dir_sS/$sam.$step.sh";
 	if ($step =~ /1/){             
 		open SSC,">$dir_sS/$sam.clean.sh";
-		print LINE "sh $dir_sS/$sam.clean.sh\n";
+		if($CFG{'qsub'} eq "on"){
+			print LINE &qsub($CFG{'vf1'}, 1, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.clean.sh");
+		}else{
+			print LINE "sh $dir_sS/$sam.clean.sh\n";
+		}
 	}                              
 	if ($step =~ /2/){
 		open SSR,">$dir_sS/$sam.rmhost.sh";
-		print LINE "sh $dir_sS/$sam.rmhost.sh\n";
+		if($CFG{'qsub'} eq "on"){
+			print LINE &qsub($CFG{'vf2'}, $CFG{'pro'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.rmhost.sh");
+		}else{
+			print LINE "sh $dir_sS/$sam.rmhost.sh\n";
+		}
 	}                              
 	if ($step =~ /3/){             
 		open SSS,">$dir_sS/$sam.soap.sh";
 		open LIST,">$dir_sp/$sam.soap.list";
-        print LINE "sh $dir_sS/$sam.soap.sh\n";
+		if($CFG{'qsub'} eq "on"){
+			print LINE &qsub($CFG{'vf3'}, $CFG{'pro'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.soap.sh");
+		}else{
+	        print LINE "sh $dir_sS/$sam.soap.sh\n";
+		}
 	}
 	if ($step =~ /4/){
-        print LINE "sh $dir_sS/$sam.abun.sh\n"; 
+		if($CFG{'qsub'} eq "on"){
+			print LINE &qsub($CFG{'vf4'}, 1, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.abun.sh");
+		}else{
+	        print LINE "sh $dir_sS/$sam.abun.sh\n"; 
+		}
 		print B4 "sh $dir_sS/$sam.abun.sh\n";
 	}
 	close LINE;                    
@@ -285,4 +301,13 @@ sub version {
     author:     fangchao\@genomics.cn
 VERSION
 };
+sub qsub {
+	my $vf = shift;
+	my $co = shift;
+	my $q  = shift;
+	my $P  = shift;
+	my $sh = shift;
+	my $base = basename($sh);
+	return("qsub_all.pl -l vf=$vf,p=$co -q $q -P $P -d $sh\_qsub -N $base $sh\n")
+}
 
