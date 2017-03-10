@@ -46,16 +46,7 @@ options:
 	-v|version	:show version and author info.
 USAGE
 };
-my($path_f,$ins_f,$step,$out_dir,$config,%CFG,$help,$version);
-GetOptions(
-	"p|path:s"    => \$path_f,
-	"i|ins:s"     => \$ins_f,
-	"s|step:s"    => \$step,
-	"o|outdir:s"  => \$out_dir,
-	"c|config:s"  => \$config,
-	"h|help:s"    => \$help,
-	"v|version:s" => \$version,
-);
+
 my $pattern = $ARGV[0];
 print &usage && exit if (!defined $pattern);
 if($pattern eq "config"){
@@ -69,6 +60,18 @@ if ($pattern !~ /pe|se|config/){
     system("$int$path/@ARGV");
     exit;
 }
+
+my($path_f,$ins_f,$step,$out_dir,$config,%CFG,$help,$version);
+GetOptions(
+    "p|path:s"    => \$path_f,
+    "i|ins:s"     => \$ins_f,
+    "s|step:s"    => \$step,
+    "o|outdir:s"  => \$out_dir,
+    "c|config:s"  => \$config,
+    "h|help:s"    => \$help,
+    "v|version:s" => \$version,
+);
+
 print &version && exit if defined $version;
 print &usage && exit if ( (!defined $path_f)||(defined $help) );
 
