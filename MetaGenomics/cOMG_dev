@@ -78,7 +78,7 @@ print &usage && exit if ( (!defined $path_f)||(defined $help) );
 # ####################
 $step    ||= "1234";
 $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
-$path_f = abs_path($path_f);
+#$path_f = abs_path($path_f);
 #$ins_f = "SE" if $pattern =~ /se/i;
 #$ins_f  = abs_path($ins_f) if $ins_f ne "SE";
 $ins_f = "SE";
@@ -136,13 +136,20 @@ system "mkdir -p $dir_r" unless(-d $dir_r or $step !~ /2/);
 system "mkdir -p $dir_sp" unless(-d $dir_sp or $step !~ /3/);
 system "mkdir -p $dir_sA" unless(-d $dir_sA or $step !~ /A/);
 
-open IN,"<$path_f" || die $!;
+
 my (%SAM,@samples,$tmp_out,$tmp_outN,$tmp_outQ);
-while (<IN>){
-	chomp;
-	my @a = split;
-	my ($sam,$pfx,$path) = @a;
-	push @{$SAM{$sam}{$pfx}}, $path;
+my @paths = split (',',$path_f);
+while(@paths>0){
+	my $path_i = shift @paths;
+	$path_i = abs_path($path_i);
+	open IN,"<$path_i" or die $!;
+	while (<IN>){
+		chomp;
+		my @a = split;
+		my ($sam,$pfx,$path) = @a;
+		push @{$SAM{$sam}{$pfx}}, $path;
+	}
+	close IN;
 }
 ###############################
 
