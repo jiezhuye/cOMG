@@ -55,10 +55,9 @@ if($pattern eq "config"){
 }
 if ($pattern !~ /pe|se|config/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
-    my $int = ($pattern=~/\.pl$/)?'perl ':'';
+    my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
     print "$int$path/@ARGV\n";
-    system("$int$path/@ARGV");
-    exit;
+	die "ERR $?: $cmd $pattern failed!\n" if system("$int$path/@ARGV");
 }
 
 my($path_f,$ins_f,$step,$out_dir,$config,%CFG,$help,$version);
@@ -105,24 +104,18 @@ $CFG{'max'}=1000;
 
 # scripts under bin
 my $bin = "$Bin/bin";
-#my $s_trim   = "$bin/trimReads.pl";
-#my $s_filter = "$bin/filterReads.pl";
-my $s_clean  = "$bin/readsFilter.dev.pl";
-my $s_SEclean= "$bin/OAs1_trim.pl";
-my $s_PEclean= "$bin/PE_Filter.pl";
-#my $s_rm     = "/ifs5/PC_MICRO_META/PRJ/MetaSystem/analysis_flow/bin/program/rmhost_v1.0.pl"; #this script goes wrong on some nodes
-my $s_rm     = "$bin/rmhost_v1.2.pl";
-my $s_soap   = "$bin/soap2BuildAbundance.dev.pl";
-my $s_abun   = "$bin/BuildAbundance.dev.pl";
+my $s_clean  = "readsFilter.dev.pl";
+my $s_SEclean= "OAs1_trim.pl";
+my $s_PEclean= "PE_Filter.pl";
+my $s_rm     = "rmhost_v1.2.pl";
+my $s_soap   = "soap2BuildAbundance.dev.pl";
+my $s_abun   = "BuildAbundance.dev.pl";
 # public database prefix
-$CFG{'db_host'} ||= "/nas/RD_09C/resequencing/resequencing/tmp/pub/Genome/Human/human.fa.index";
 # project results directiory structure
 my $dir_s = $out_dir."/script";
 	my $dir_sI = $dir_s."/individual";
 	my $dir_sS = $dir_s."/samples";
 	my $dir_sB = $dir_s."/steps";
-#my $dir_t = $out_dir."/trim";
-#my $dir_f = $out_dir."/filter";
 my $dir_c = $out_dir."/clean";
 my $dir_r = $out_dir."/rmhost";
 my $dir_sp = $out_dir."/soap";
@@ -132,8 +125,6 @@ system "mkdir -p $dir_s" unless(-d $dir_s);
 	system "mkdir -p $dir_sI" unless(-d $dir_sI);
 	system "mkdir -p $dir_sS" unless(-d $dir_sS);
 	system "mkdir -p $dir_sB" unless(-d $dir_sB);
-#system "mkdir -p $dir_f" unless(-d $dir_f or $s !~ /1/);
-#system "mkdir -p $dir_t" unless(-d $dir_t or $s !~ /2/);
 system "mkdir -p $dir_c" unless(-d $dir_c or $step !~ /1/);
 system "mkdir -p $dir_r" unless(-d $dir_r or $step !~ /2/);
 system "mkdir -p $dir_sp" unless(-d $dir_sp or $step !~ /3/);
@@ -142,11 +133,13 @@ system "mkdir -p $dir_sA" unless(-d $dir_sA or $step !~ /A/);
 
 my (%SAM,@samples,$tmp_out,$tmp_outN,$tmp_outQ);
 my @paths = split (',',$path_f);
+open PATH,"> $out_dir/sam.id.path" or die $!;
 while(@paths>0){
 	my $path_i = shift @paths;
 	$path_i = abs_path($path_i);
 	open IN,"<$path_i" or die $!;
 	while (<IN>){
+		print PATH $_ ;
 		chomp;
 		my @a = split;
 		my ($sam,$pfx,$path) = @a;
@@ -154,6 +147,7 @@ while(@paths>0){
 	}
 	close IN;
 }
+close PATH;
 ###############################
 
 ## start <- top exec batch scripts
@@ -179,7 +173,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	open LINE,"> $dir_sS/$sam.$step.sh";
 	if ($step =~ /1/){             
 		open SSC,">$dir_sS/$sam.clean.sh";
-		if($CFG{'qsub'} eq "on"){
+		if($CFG{'qsub'} =~ /on|1/){
 			print LINE &qsub($CFG{'vf1'}, 1, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.clean.sh");
 		}else{
 			print LINE "sh $dir_sS/$sam.clean.sh\n";
@@ -187,7 +181,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	}                              
 	if ($step =~ /2/){
 		open SSR,">$dir_sS/$sam.rmhost.sh";
-		if($CFG{'qsub'} eq "on"){
+		if($CFG{'qsub'}  =~ /on|2/){
 			print LINE &qsub($CFG{'vf2'}, $CFG{'pro'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.rmhost.sh");
 		}else{
 			print LINE "sh $dir_sS/$sam.rmhost.sh\n";
@@ -196,14 +190,14 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	if ($step =~ /3/){             
 		open SSS,">$dir_sS/$sam.soap.sh";
 		open LIST,">$dir_sp/$sam.soap.list";
-		if($CFG{'qsub'} eq "on"){
+		if($CFG{'qsub'}  =~ /on|3/){
 			print LINE &qsub($CFG{'vf3'}, $CFG{'pro'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.soap.sh");
 		}else{
 	        print LINE "sh $dir_sS/$sam.soap.sh\n";
 		}
 	}
 	if ($step =~ /4/){
-		if($CFG{'qsub'} eq "on"){
+		if($CFG{'qsub'}  =~ /on|4/){
 			print LINE &qsub($CFG{'vf4'}, 1, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.abun.sh");
 		}else{
 	        print LINE "sh $dir_sS/$sam.abun.sh\n"; 
@@ -233,11 +227,11 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			if (@fs eq 2 ){
 				$seq = "$fq1,$fq2";
 				@fs = ("$dir_c/$pfx.clean.1.fq.gz","$dir_c/$pfx.clean.2.fq.gz","$dir_c/$pfx.clean.single.fq.gz");
-				print SIC "perl $s_PEclean $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'PhQ'}\n";
+				print SIC "$cmd $s_PEclean $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'PhQ'}\n";
 			}else{
 				$seq = $fq1;
 				$tmp_out = "$dir_c/$pfx.clean.fq.gz";
-				print SIC "perl $s_SEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'}\n";
+				print SIC "$cmd $s_SEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'}\n";
 			}
 			print B1 "sh $dir_sI/$pfx.clean.sh\n";
 			print SSC "sh $dir_sI/$pfx.clean.sh\n";
@@ -254,7 +248,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-a $tmp_out";
 				$tmp_out = "$dir_r/$pfx.rmhost.fq.gz";
 			}
-			print SIR "perl $s_rm $seq -d $CFG{'db_host'} -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'pro'} -f Y -q 1 -p $dir_r/$pfx\n";
+			print SIR "$cmd $s_rm $seq -d $CFG{'db_host'} -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'pro'} -f Y -q 1 -p $dir_r/$pfx\n";
 			print B2 "sh $dir_sI/$pfx.rmhost.sh\n";
 			print SSR "sh $dir_sI/$pfx.rmhost.sh\n";
 			close SIR;
@@ -273,7 +267,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-i1 $tmp_out";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.SE.se.gz\n";
 			}
-			print SIS "perl $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx &> $dir_sp/$sam.log\n";
+			print SIS "$cmd $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx &> $dir_sp/$sam.log\n";
 			print B3 "sh $dir_sI/$pfx.soap.sh\n";
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
 			close SIS;
@@ -286,7 +280,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 
 	if ($step =~ /4/){ # Since step4 contains abundance building which needs operated on sample level, I've got to put them here.
 		open ABUN,">$dir_sS/$sam.abun.sh";
-		print ABUN "perl $s_abun -ins $ins_f -gl $CFG{'RGL'} -l  $dir_sp/$sam.soap.list -o $dir_sp -p $sam\n";
+		print ABUN "$cmd $s_abun -ins $ins_f -gl $CFG{'RGL'} -l  $dir_sp/$sam.soap.list -o $dir_sp -p $sam\n";
 		close ABUN;
 	}
 }
@@ -298,7 +292,7 @@ close B4;
 print C2 "wait\n"; close C2;
 ## done! <- contents of each batch scripts
 open STAT,">$out_dir/report.stat.sh";
-print STAT "perl $bin/report.stat.pl $path_f $out_dir $step > REPORT.txt\n";
+print STAT "$cmd report.stat.pl sam.id.path ./ $step > REPORT.txt\n";
 close STAT;
 exit;
 # ####################
