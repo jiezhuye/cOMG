@@ -51,13 +51,18 @@ my $pattern = $ARGV[0];
 print &usage && exit if (!defined $pattern);
 if($pattern eq "config"){
     `cp $RealBin/default.cfg $cwd/`;
-    exit
+    exit;
 }
 if ($pattern !~ /pe|se|config/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
     print "$int$path/@ARGV\n";
-	die "ERR $?: $cmd $pattern failed!\n" if system("$int$path/@ARGV");
+	if(system("$int$path/@ARGV")){
+		#die "ERR $?: $cmd $pattern failed!\n";
+		exit(1);
+	}else{
+		exit;
+	}
 }
 
 my($path_f,$ins_f,$step,$out_dir,$config,%CFG,$help,$version);
@@ -99,8 +104,11 @@ if (defined $config){
 		}
 	}
 }
-$CFG{'min'}=0;
-$CFG{'max'}=1000;
+$CFG{'min'} ||=0;
+$CFG{'max'} ||=1000;
+$CFG{'r'} ||= 0;
+$CFG{'s'} ||= 120;
+$CFG{"B"} ||= 0;
 
 # scripts under bin
 my $bin = "$Bin/bin";
@@ -137,7 +145,7 @@ open PATH,"> $out_dir/sam.id.path" or die $!;
 while(@paths>0){
 	my $path_i = shift @paths;
 	$path_i = abs_path($path_i);
-	open IN,"<$path_i" or die $!;
+	open IN,"<$path_i" or die "can not open $path_i, $!\n";
 	while (<IN>){
 		print PATH $_ ;
 		chomp;
@@ -160,21 +168,26 @@ close C1;
 ## done! <- top exec batch scripts
 #
 ## start <- contents of each batch scripts
-open C2,">$out_dir/RUN.linear.$step.sh"; 
+open M1,">$out_dir/RUN.qsubM.sh";
+print M1 "$cmd qsubM -d $dir_s/QSUBM.matrix_qsub -P $CFG{'P'} -q $CFG{'q'} -r $CFG{'r'} -s $CFG{'s'} $dir_s/QSUBM.matrix";
+close M1;
+open QSUBM,"> $dir_s/QSUBM.matrix";
+open C2,">$out_dir/RUN.linear.$step.sh";
 open B1,">$dir_s/batch.clean.sh";
 open B2,">$dir_s/batch.rmhost.sh";
 open B3,">$dir_s/batch.soap.sh";
-open BA,">$dir_s/batch.soapA.sh";
 open B4,">$dir_s/batch.abun.sh";
 ###############################
 foreach my $sam (sort keys %SAM){ # operation on sample level
 	### Write main batch scripts first.
 	print C2 "sh $dir_sS/$sam.$step.sh \&\n";
 	open LINE,"> $dir_sS/$sam.$step.sh";
-	if ($step =~ /1/){             
+	if ($step =~ /1/){ 
 		open SSC,">$dir_sS/$sam.clean.sh";
 		if($CFG{'qsub'} =~ /on|1/){
-			print LINE &qsub($CFG{'vf1'}, 1, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.clean.sh");
+			$CFG{'f1'} ||= $CFG{'f'};
+			$CFG{'p1'} ||= $CFG{'p'};
+			print LINE &qsub($CFG{'f1'}, $CFG{'p1'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.clean.sh");
 		}else{
 			print LINE "sh $dir_sS/$sam.clean.sh\n";
 		}
@@ -182,7 +195,9 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	if ($step =~ /2/){
 		open SSR,">$dir_sS/$sam.rmhost.sh";
 		if($CFG{'qsub'}  =~ /on|2/){
-			print LINE &qsub($CFG{'vf2'}, $CFG{'pro'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.rmhost.sh");
+			$CFG{'f2'} ||= $CFG{'f'};
+			$CFG{'p2'} ||= $CFG{'p'};
+			print LINE &qsub($CFG{'f2'}, $CFG{'p2'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.rmhost.sh");
 		}else{
 			print LINE "sh $dir_sS/$sam.rmhost.sh\n";
 		}
@@ -191,17 +206,21 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 		open SSS,">$dir_sS/$sam.soap.sh";
 		open LIST,">$dir_sp/$sam.soap.list";
 		if($CFG{'qsub'}  =~ /on|3/){
-			print LINE &qsub($CFG{'vf3'}, $CFG{'pro'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.soap.sh");
+			$CFG{'f3'} ||= $CFG{'f'};
+			$CFG{'p3'} ||= $CFG{'p'};
+			print LINE &qsub($CFG{'f3'}, $CFG{'p3'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.soap.sh");
 		}else{
 	        print LINE "sh $dir_sS/$sam.soap.sh\n";
 		}
 	}
 	if ($step =~ /4/){
 		if($CFG{'qsub'}  =~ /on|4/){
-			print LINE &qsub($CFG{'vf4'}, 1, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.abun.sh");
+			$CFG{'f4'} ||= $CFG{'f'};
+			$CFG{'p4'} ||= $CFG{'p'};
+			print LINE &qsub($CFG{'f4'}, $CFG{'p4'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.abun.sh");
 		}else{
 	        print LINE "sh $dir_sS/$sam.abun.sh\n"; 
-		}
+		} 
 		print B4 "sh $dir_sS/$sam.abun.sh\n";
 	}
 	close LINE;                    
@@ -235,6 +254,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			}
 			print B1 "sh $dir_sI/$pfx.clean.sh\n";
 			print SSC "sh $dir_sI/$pfx.clean.sh\n";
+			print QSUBM &qsubM($sam, 1, "sh $dir_sI/$pfx.clean.sh");
 			close SIC;
 		}
 ###############################
@@ -248,16 +268,17 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-a $tmp_out";
 				$tmp_out = "$dir_r/$pfx.rmhost.fq.gz";
 			}
-			print SIR "$cmd $s_rm $seq -d $CFG{'db_host'} -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'pro'} -f Y -q 1 -p $dir_r/$pfx\n";
+			print SIR "$cmd $s_rm $seq -d $CFG{'db_host'} -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'p2'} -f Y -q 1 -p $dir_r/$pfx\n";
 			print B2 "sh $dir_sI/$pfx.rmhost.sh\n";
 			print SSR "sh $dir_sI/$pfx.rmhost.sh\n";
+			print QSUBM &qsubM($sam, 2, "sh $dir_sI/$pfx.rmhost.sh");
 			close SIR;
 		}
 ###############################
 		if ($step =~ /3/){
 			open SIS,">$dir_sI/$pfx.soap.sh";
 			my $seq = "";
-			my $par = "m=$CFG{'min'},x=$CFG{'max'},r=2,l=30,M=4,S,p=$CFG{'pro'},v=5,S,c=0.95";
+			my $par = "m=$CFG{'min'},x=$CFG{'max'},r=2,l=30,M=4,S,p=$CFG{'p3'},v=5,S,c=0.95";
 			if (@fs > 1){
 				$seq = "-i1 $fs[0] -i2 $fs[1] -i3 $fs[2]";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.pair.pe.gz\n";
@@ -270,6 +291,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			print SIS "$cmd $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx &> $dir_sp/$sam.log\n";
 			print B3 "sh $dir_sI/$pfx.soap.sh\n";
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
+			print QSUBM &qsubM($sam, 3, "sh $dir_sI/$pfx.soap.sh");
 			close SIS;
 		}
 	}
@@ -280,16 +302,17 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 
 	if ($step =~ /4/){ # Since step4 contains abundance building which needs operated on sample level, I've got to put them here.
 		open ABUN,">$dir_sS/$sam.abun.sh";
-		print ABUN "$cmd $s_abun -ins $ins_f -gl $CFG{'RGL'} -l  $dir_sp/$sam.soap.list -o $dir_sp -p $sam\n";
+		print QSUBM &qsubM($sam, 4, "sh $dir_sS/$sam.abun.sh");
+		print ABUN "$cmd $s_abun -ins $ins_f -gl $CFG{'RGL'} -l $dir_sp/$sam.soap.list -o $dir_sp -p $sam\n";
 		close ABUN;
 	}
 }
 close B1;
 close B2;
 close B3;
-close BA;
 close B4;
 print C2 "wait\n"; close C2;
+close QSUBM;
 ## done! <- contents of each batch scripts
 open STAT,">$out_dir/report.stat.sh";
 print STAT "$cmd report.stat.pl sam.id.path ./ $step > REPORT.txt\n";
@@ -306,12 +329,18 @@ sub version {
 VERSION
 };
 sub qsub {
-	my $vf = shift;
-	my $co = shift;
+	my $f = shift;
+	my $p = shift;
 	my $q  = shift;
 	my $P  = shift;
 	my $sh = shift;
 	my $base = basename($sh);
-	return("qsub_all.pl -l vf=$vf,p=$co -q $q -P $P -d $sh\_qsub -N $base $sh\n")
+	return("qsub_all.pl -l vf=$f,p=$p -q $q -P $P -d $sh\_qsub -N $base $sh\n")
 }
-
+sub qsubM {
+	my($N,$s,$sh) = @_;
+	my $B = ($CFG{"B$s"})?$CFG{"B$s"}:$CFG{"B"};
+	my $vf= ($CFG{"f$s"})?$CFG{"f$s"}:$CFG{"f"};
+	my $p = ($CFG{"p$s"})?$CFG{"p$s"}:$CFG{"p"};
+	return("N=$N TD=$s B=$B f=$vf p=$p $sh\n")
+}
