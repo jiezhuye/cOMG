@@ -171,7 +171,7 @@ sub check_job{
 				print EQW "Eqw obtained! $jbID : $eqwNode : $1 \n";
 				`qmod -c $jbID`;
 				$sleep=0;
-			}elsif($jbstat eq "T" or ($jbqueue =~ /^.+@(.+)\.local$/ and exists $dead{$1})){
+			}elsif($jbstat eq "T" ){ #or ($jbqueue =~ /^.+@(.+)\.local$/ and exists $dead{$1})){
 				$$error{$jbname}++;
 				`qdel $jbID`;
 				delete $$run{$jbID};

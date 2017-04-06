@@ -113,8 +113,8 @@ $CFG{"B"} ||= 0;
 # scripts under bin
 my $bin = "$Bin/bin";
 my $s_clean  = "readsFilter.dev.pl";
-my $s_SEclean= "OAs1_trim.pl";
-my $s_PEclean= "PE_Filter.pl";
+my $s_SEclean= "OAs1";
+my $s_PEclean= "OAs1";
 my $s_rm     = "rmhost_v1.2.pl";
 my $s_soap   = "soap2BuildAbundance.dev.pl";
 my $s_abun   = "BuildAbundance.dev.pl";
