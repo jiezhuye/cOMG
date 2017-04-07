@@ -90,8 +90,6 @@ s   = 120				#qusbM定时检查任务完成情况的时间间隔（秒）
 r   = 10                #repeat time when job failed or interrupted
 ```
 
-
-
 上述配置文件准备完毕后，运行本脚本可以生成工作目录：
 
 ```
