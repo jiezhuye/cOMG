@@ -246,7 +246,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			if (@fs eq 2 ){
 				$seq = "$fq1,$fq2";
 				@fs = ("$dir_c/$pfx.clean.1.fq.gz","$dir_c/$pfx.clean.2.fq.gz","$dir_c/$pfx.clean.single.fq.gz");
-				print SIC "$cmd $s_PEclean $seq $dir_c/$pfx $CFG{'Qt'} $CFG{'l'} $CFG{'N'} $CFG{'Qf'} $CFG{'lf'} $CFG{'PhQ'}\n";
+				print SIC "$cmd $s_PEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'}\n";
 			}else{
 				$seq = $fq1;
 				$tmp_out = "$dir_c/$pfx.clean.fq.gz";
