@@ -10,6 +10,7 @@ usage:
 se pattern:
 	perl $0 fq1 <prefix> <Qual system(33|64)> <min length> <seed OA> <fragment OA>
 e.g	perl $0 sample.fq clean 33 30 0.99 0.90
+	perl $0 sample.1.fq,sample.2.fq clean 33 30 0.99 0.90
 USAGE
 	exit;
 }
