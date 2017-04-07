@@ -3,9 +3,11 @@ use warnings;
 use strict;
 use Getopt::Long;
 use File::Basename;
-use FindBin qw($Bin);
-use lib $Bin;
+#use FindBin qw($Bin);
+use FindBin qw($RealBin);
+#use lib $Bin;
 use Cwd 'abs_path';
+my $Bin = $RealBin;
 
 sub usage {
 	print <<USAGE
@@ -28,22 +30,33 @@ Options
 			kw			
 			permanova	
 			rf			random forest
+    -call    calling the sub scripts located at bin dir.
 e.g.
 	perl $0 -cfg configureA -dir ./output -step 1
 
 USAGE
 }
-
+&usage && exit 0 if @ARGV == 0;
 # Globle variables
-my ($help, $cfg, $dir, $step, $func);
+my ($help, $cfg, $dir, $step, $func, $sub);
 GetOptions(
 	"help"   => \$help,
 	"cfg=s"  => \$cfg,
 	"dir=s"  => \$dir,
 	"step=s" => \$step,
 	"func=s" => \$func,
+#    "call=s"  => \$sub,
 );
 &usage && exit 0 if defined $help;
+if(@ARGV){
+#if(defined $sub){
+    my $bin = "$Bin/bin";
+    $sub = shift @ARGV;
+    my $int = ($sub=~/\.pl$/)?'perl ':($sub=~/\.(R|r)$/)?'Rscript ':'./';
+    print "$int$bin/$sub @ARGV\n";
+    system("$int$bin/$sub @ARGV");
+    exit;
+}
 
 # Default settings
 $dir  ||= "CHAOS";

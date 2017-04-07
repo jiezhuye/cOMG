@@ -46,20 +46,39 @@ $dbs =~ s/,/ -D /g;
 if($sample_single){
 	my $cmd = "$soap_path -a $sample_single -D $dbs -o $workpath/$sample.gene.build/$prefix.soap.single.se $parameter 2>$workpath/$sample.gene.build/$prefix.soap.single.log\n";
 	 print "$cmd";
-	`$cmd`;print "single soap finished!\n";
+	unless(system($cmd)){
+		print "single soap finished!\n";
+	}else{
+		print "$?:single soap failed!\n";
+		exit(($?>128?$?-128:$?));
+	}
 }
 
 if($sample_pair_2){
 	my $cmd = "$soap_path -a $sample_pair_1 -b $sample_pair_2 -D $dbs -o $workpath/$sample.gene.build/$prefix.soap.pair.pe -2 $workpath/$sample.gene.build/$prefix.soap.pair.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.pair.log\n";
 	print "$cmd";
-	`$cmd`;print "pair soap finished!\n";
+	unless(system($cmd)){
+		print "pair soap finished!\n";
+	}else{
+		print "$?: pair soap failed!\n";
+		exit(($?>128?$?-128:$?));
+	}
 }elsif($sample_pair_1){
 	my $cmd = "$soap_path -a $sample_pair_1 -D $dbs -o $workpath/$sample.gene.build/$prefix.soap.SE.se $parameter 2> $workpath/$sample.gene.build/$prefix.soap.SE.log\n";
 	print "$cmd";
-	`$cmd`;print "SE soap finished!\n";
+	unless(system($cmd)){
+		print "SE soap finished!\n";
+	}else{
+		die "ERR $?: SE soap failed!\n";
+		#exit(($?>128?$?-128:$?));
+	}
 }
 
-`gzip -f $workpath/$sample.gene.build/*.[ps]e`;
+unless(system("gzip -f $workpath/$sample.gene.build/*.[ps]e")){
+	exit(0);
+}else{
+	exit(($?>128?$?-128:$?));
+}
 
 ########################
 # sub function
