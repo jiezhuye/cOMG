@@ -56,7 +56,7 @@ if($pattern eq "config"){
 if ($pattern !~ /pe|se|config/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
-    print "$int$path/@ARGV\n";
+    print STDERR "$int$path/@ARGV\n";
 	if(system("$int$path/@ARGV")){
 		#die "ERR $?: $cmd $pattern failed!\n";
 		exit(1);
