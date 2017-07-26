@@ -29,11 +29,12 @@ my %OPT;
 $OPT{N} = $opt_N || 'work';
 $OPT{q} = $opt_q || 'st.q';
 $OPT{P} = $opt_P || 'st_ms';
-$OPT{f} = $opt_f || 'vf=1G';
-$OPT{p} = $opt_p || 'p=1';
-$OPT{b} = 1;
+$OPT{f} = $opt_f || '1G'; $OPT{f} =~ s/vf=//;
+$OPT{p} = $opt_p || '1';  $OPT{p} =~ s/p=//;
+$OPT{b} = $opt_b || 1;
 $OPT{B} = $opt_B || 0;
 $OPT{r} = $opt_r || 0;
+
 
 my $maxJob = 1000;
 my $sleepT = $opt_s || 120;
@@ -48,26 +49,35 @@ open IS,$shell or die "can\'t open shell.sh: $shell\n";
 while(<IS>){
 	chomp;
 	my $cmd;
-	if($_ =~ /=/){
+    $OPT{'TD'} ||= 0;
+	$splitA++;
+    if($_ =~ /=/){
 		my @opts = split;
 		while($opts[0] =~/^(\S+)=(\S+)$/){
 			$OPT{$1} = $2;
 			shift @opts;
 		}
 		$cmd = join(" ", @opts);
+        $JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}  = $cmd;
 	}else{
-		$cmd = $_;
+        my $cyc = $OPT{b};
+        $cmd = $_;
+        while($cyc>0){
+            $JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'} .= "\n".$cmd;
+            last if(eof(IS));
+            $cmd = <IS>;
+            chomp($cmd);
+            $cyc -- ;
+        }
 	}
-	$OPT{'TD'} ||= 0;
-	$splitA++;
-	my $JBname = "$OPT{N}\_$OPT{'TD'}\_$splitA";
-	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'} = $cmd;
+	
+    my $JBname = "$OPT{N}\_$OPT{'TD'}\_$splitA";
 	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'opt'} = "qsub -cwd -S /bin/bash -l vf=$OPT{'f'},p=$OPT{'p'} ";
 	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'opt'}.= "-q $OPT{'q'} -P $OPT{'P'} ";
 
 	open  OUTS,">$qsubDir/$JBname.sh" or die "can\'t open split shell: $qsubDir/$JBname.sh\n";
-	my $waitTime = $sleepT + 60;
-	print OUTS "sleep $waitTime\n$cmd\n";
+	print OUTS "sleep  $sleepT + 60\n";
+	print OUTS "$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}\n";
 	print OUTS "[ \$? -eq 0 ] && echo this-work-is-complete\n";
 	close OUTS;
 	$allJobs[$splitA] = join(" ",$OPT{'N'},$OPT{'TD'},$OPT{'B'});
@@ -274,8 +284,8 @@ usage: perl $0 [options] shell_script
 		-N  set the prefix tag for qsubed jobs, default work
 		-q  queue list, default all availabile queues
 		-P  project_name, default not
-		-f  vf=xxG (default vf=1G)
-		-p  p=xx (default p=1)
+		-f  numeric with unit , e.g: xxG/xxM/xxm. Default is '1G'.
+		-p  numeric, default is '1'.
 		-b  set number of lines to form a job, force to be 1 in this version
 		-B  Backup job number, default 0
 		-m set the maximum number of jobs to throw out, unlimited in this version
