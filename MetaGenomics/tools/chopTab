@@ -1,0 +1,86 @@
+#!/usr/bin/perl -w 
+use strict;
+
+my $usage = "Usage: perl $0 <list file> <input file> [mode] <output> [range](optional) [for sort(optional)] [alphabet]
+		mode	in	<include the elements in the list>
+			ex	<exclude the elements in the list>
+		
+		range	h	only match header
+			r	only match row
+			t	<default> match the whole table(both header and column)
+		forSort	s	if your files are sorted,this option may help match much more faster\n
+		alphabet a	if index is sorted by alphabet order (in other words, they are not numbers)\n";
+
+if (@ARGV<4) {
+	die "insufficient ARGV\n$usage";
+}
+
+my ($lst_f,$table_f,$mode,$dir,$range,$st,$abc)=@ARGV;
+$range||="t";
+$st||="F";
+$abc||="F";
+
+my (@lst,@column,$switch,$oppo);
+
+if ($mode eq "in"){
+	$oppo = "ex"
+}elsif($mode eq "ex"){
+	$oppo = "in"
+}else{ die "ERROR:<mode>:\"$mode\" is not allowed. Only \"ex\" or \"in\" available.\n$usage"
+}
+$dir =~ s/\/$//;
+
+
+open L,"$lst_f" || die $!;
+while(<L>){
+	chomp;
+	my @a=split;
+	push @lst, $a[0];
+}
+close L;
+#####################################
+$table_f=~ /(\/|)([^\/]+)\.(\w+)$/; 
+my $pt = $2;
+my $suffix = $3;
+$lst_f =~ /(\/|)([^\/]+)\.(\w+)$/;
+open OUT,">$dir" || die $!;
+#####################################
+my $openMethod = ($table_f =~ /\.gz$/)? "gzip -dc $table_f |":"$table_f";
+open T,$openMethod || die $!;
+
+my $k=0;
+while(<T>){
+	chomp;
+	my @a=split /\t/;
+	if ( $.==1 ){
+		if ( $a[0] eq "" ) {
+		for (my $i=1;$i<=$#a;$i++){
+			$switch = $oppo;
+			for (my $j=0;$j<=$#lst;$j++){
+				if ($a[$i] eq $lst[$j]){$switch = $mode}
+			}
+			next if $switch eq "ex" && $range ne "r" ;
+			push @column,$i;
+			print OUT "\t$a[$i]";
+		}print OUT "\n";
+		}else{@column =(1 .. $#a);}
+	}
+	next if $a[0] eq "";
+
+	$switch = $oppo;
+	$k=0 if $st ne "s";
+	for (my $i=$k;$i<=$#lst;$i++){
+		if ($a[0] eq $lst[$i]){$switch = $mode;$k=$i+1;last};
+		last if ($st eq "s" && $abc eq "a" && $lst[$i] gt $a[0]);
+		last if ($st eq "s" && $abc eq "F" && $lst[$i] >= $a[0]);
+	}
+	next if $switch eq "ex" && $range ne "h";
+	print OUT $a[0];
+	for (my $i=0;$i<=$#column;$i++){
+		print OUT "\t$a[$column[$i]]";
+	}
+	print OUT "\n";
+}
+
+close T;
+
