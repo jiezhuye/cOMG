@@ -88,7 +88,7 @@ $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
 #$path_f = abs_path($path_f);
 #$ins_f = "SE" if $pattern =~ /se/i;
 #$ins_f  = abs_path($ins_f) if $ins_f ne "SE";
-$ins_f = "SE";
+$ins_f ||= "SE";
 
 if (defined $config){
 	if($config =~ /\.cfg$/){
