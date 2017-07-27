@@ -28,20 +28,6 @@ options:
 					4	combine samples' abun into a single profile table
 	-o|outdir	:output directory path. Conatins the results and scripts.
 	-c|config	:provide a configure file including needed database and parameters for each setp, default below:
-					Qt  ||= 20		Qvalue for trim 
-					l   ||= 10	 	bp length for trim
-					N   ||= 1		tolerance number of N for filter
-					Qf  ||= 15	 	Qvalue for filter. The reads which more than half of the bytes lower than Qf will be discarded.
-					lf  ||= 0		left fq length. The minimum
-					q   ||= "st.q"		queue for qsub
-					P   ||= "st_ms"		Project id for qsub
-					pro ||= 8			process number for qsub
-					vf1 ||= "0.3G"		virtual free for qsub in step 1 (trim & filter)
-					vf2 ||= "8G"		virtual free for qsub in step 2 (remove host genes)
-					vf3 ||= "16G"		virtual free for qsub in step 3 (aligned to gene set)
-					vf4 ||= "10G"		virtual free for qsub in step 4 (calculate soap results to abundance)
-					m   ||= 99	 	job number submitted each for qsub
-					r   ||= 1		repeat time when job failed or interrupted
 	-h|help		:show help info
 	-v|version	:show version and author info.
 USAGE
@@ -53,7 +39,7 @@ if($pattern eq "config"){
     `cp $RealBin/default.cfg $cwd/`;
     exit;
 }
-if ($pattern !~ /pe|se|config/){
+if ($pattern !~ /pe|se|config|-v|-h/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
     print STDERR "$int$path/@ARGV\n";
@@ -324,7 +310,7 @@ exit;
 sub version {
 	print <<VERSION;
     version:    v0.15-dev
-    update:     20160111-20171117
+    update:     20160111-20170726
     author:     fangchao\@genomics.cn
 VERSION
 };
