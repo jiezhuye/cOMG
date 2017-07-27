@@ -28,20 +28,6 @@ options:
 					4	combine samples' abun into a single profile table
 	-o|outdir	:output directory path. Conatins the results and scripts.
 	-c|config	:provide a configure file including needed database and parameters for each setp, default below:
-					Qt  ||= 20		Qvalue for trim 
-					l   ||= 10	 	bp length for trim
-					N   ||= 1		tolerance number of N for filter
-					Qf  ||= 15	 	Qvalue for filter. The reads which more than half of the bytes lower than Qf will be discarded.
-					lf  ||= 0		left fq length. The minimum
-					q   ||= "st.q"		queue for qsub
-					P   ||= "st_ms"		Project id for qsub
-					pro ||= 8			process number for qsub
-					vf1 ||= "0.3G"		virtual free for qsub in step 1 (trim & filter)
-					vf2 ||= "8G"		virtual free for qsub in step 2 (remove host genes)
-					vf3 ||= "16G"		virtual free for qsub in step 3 (aligned to gene set)
-					vf4 ||= "10G"		virtual free for qsub in step 4 (calculate soap results to abundance)
-					m   ||= 99	 	job number submitted each for qsub
-					r   ||= 1		repeat time when job failed or interrupted
 	-h|help		:show help info
 	-v|version	:show version and author info.
 USAGE
@@ -53,7 +39,7 @@ if($pattern eq "config"){
     `cp $RealBin/default.cfg $cwd/`;
     exit;
 }
-if ($pattern !~ /pe|se|config/){
+if ($pattern !~ /pe|se|config|-v|-h/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
     print STDERR "$int$path/@ARGV\n";
@@ -96,6 +82,7 @@ if (defined $config){
 		while(<CFG>){chomp;next if $_ =~ /^#/;next if $_ eq "";
 			$_ =~ /^(\S+)\s*=\s*(\S+)/;
 			$CFG{$1} = $2;
+            $CFG{$1} =~ s/\$cOMG_BIN/$Bin/;
 		}
 	}else{
 		foreach my $par (split(/,/,$config)){
@@ -184,9 +171,9 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	open LINE,"> $dir_sS/$sam.$step.sh";
 	if ($step =~ /1/){ 
 		open SSC,">$dir_sS/$sam.clean.sh";
+        $CFG{'p1'} ||= $CFG{'p'};
 		if($CFG{'qsub'} =~ /on|1/){
 			$CFG{'f1'} ||= $CFG{'f'};
-			$CFG{'p1'} ||= $CFG{'p'};
 			print LINE &qsub($CFG{'f1'}, $CFG{'p1'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.clean.sh");
 		}else{
 			print LINE "sh $dir_sS/$sam.clean.sh\n";
@@ -194,9 +181,9 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	}                              
 	if ($step =~ /2/){
 		open SSR,">$dir_sS/$sam.rmhost.sh";
+        $CFG{'p2'} ||= $CFG{'p'};
 		if($CFG{'qsub'}  =~ /on|2/){
 			$CFG{'f2'} ||= $CFG{'f'};
-			$CFG{'p2'} ||= $CFG{'p'};
 			print LINE &qsub($CFG{'f2'}, $CFG{'p2'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.rmhost.sh");
 		}else{
 			print LINE "sh $dir_sS/$sam.rmhost.sh\n";
@@ -205,18 +192,18 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	if ($step =~ /3/){             
 		open SSS,">$dir_sS/$sam.soap.sh";
 		open LIST,">$dir_sp/$sam.soap.list";
+        $CFG{'p3'} ||= $CFG{'p'};
 		if($CFG{'qsub'}  =~ /on|3/){
 			$CFG{'f3'} ||= $CFG{'f'};
-			$CFG{'p3'} ||= $CFG{'p'};
 			print LINE &qsub($CFG{'f3'}, $CFG{'p3'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.soap.sh");
 		}else{
 	        print LINE "sh $dir_sS/$sam.soap.sh\n";
 		}
 	}
 	if ($step =~ /4/){
+        $CFG{'p4'} ||= $CFG{'p'};
 		if($CFG{'qsub'}  =~ /on|4/){
 			$CFG{'f4'} ||= $CFG{'f'};
-			$CFG{'p4'} ||= $CFG{'p'};
 			print LINE &qsub($CFG{'f4'}, $CFG{'p4'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.abun.sh");
 		}else{
 	        print LINE "sh $dir_sS/$sam.abun.sh\n"; 
@@ -324,7 +311,7 @@ exit;
 sub version {
 	print <<VERSION;
     version:    v0.15-dev
-    update:     20160111-20171117
+    update:     20160111-20170726
     author:     fangchao\@genomics.cn
 VERSION
 };
@@ -335,7 +322,7 @@ sub qsub {
 	my $P  = shift;
 	my $sh = shift;
 	my $base = basename($sh);
-	return("qsub_all.pl -l vf=$f,p=$p -q $q -P $P -d $sh\_qsub -N $base $sh\n")
+	return("cOMG qsubM -l vf=$f,p=$p -q $q -P $P -d $sh\_qsub -N $base $sh\n")
 }
 sub qsubM {
 	my($N,$s,$sh) = @_;
