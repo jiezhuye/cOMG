@@ -58,18 +58,19 @@ while(<IS>){
 			shift @opts;
 		}
 		$cmd = join(" ", @opts);
-        $JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}  = $cmd;
 	}else{
         my $cyc = $OPT{b};
         $cmd = $_;
+        $cyc --;
         while($cyc>0){
-            $JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'} .= "\n".$cmd;
             last if(eof(IS));
-            $cmd = <IS>;
-            chomp($cmd);
+            my $next = <IS>;
+            chomp($next);
+            $cmd .= "\n".$next;
             $cyc -- ;
         }
 	}
+    $JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}  = $cmd;
 	
     my $JBname = "$OPT{N}\_$OPT{'TD'}\_$splitA";
 	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'opt'} = "qsub -cwd -S /bin/bash -l vf=$OPT{'f'},p=$OPT{'p'} ";
@@ -183,13 +184,15 @@ sub check_job{
 				$sleep=0;
 			}elsif($jbstat eq "T" ){ #or ($jbqueue =~ /^.+@(.+)\.local$/ and exists $dead{$1})){
 				$$error{$jbname}++;
-				`qdel $jbID`;
 				delete $$run{$jbID};
 				`echo $jbID: $jbname.sh has not finished! >>$shell.error`;
+
 				if($$error{$jbname} < $maxTry){
+                    my $bakJob = (sort {$a <=> $b} keys %{$BAK{$jbname}})[0];
+                    last if $bakJob eq "";
+                    `qdel $jbID`;
 					`cat /dev/null > $qsubDir/$jbname.sh.o`;
 					`cat /dev/null > $qsubDir/$jbname.sh.e`;
-					my $bakJob = (sort {$a <=> $b} keys %{$BAK{$jbname}})[0];
 					`qrls $bakJob`;
 					$$run{$bakJob} = $jbname;
 					# Re-bak
