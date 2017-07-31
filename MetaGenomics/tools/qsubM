@@ -76,7 +76,7 @@ while(<IS>){
 	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'opt'}.= "-q $OPT{'q'} -P $OPT{'P'} ";
 
 	open  OUTS,">$qsubDir/$JBname.sh" or die "can\'t open split shell: $qsubDir/$JBname.sh\n";
-	print OUTS "sleep  $sleepT + 60\n";
+	print OUTS "sleep  ".($sleepT + 60)."\n";
 	print OUTS "$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}\n";
 	print OUTS "[ \$? -eq 0 ] && echo this-work-is-complete\n";
 	close OUTS;
