@@ -70,6 +70,7 @@ while(<IS>){
             $cyc -- ;
         }
 	}
+    $OPT{'N'} = 'Job_'.$OPT{'N'} if $OPT{'N'} =~ /^[0-9]/;
     $JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}  = $cmd;
 	
     my $JBname = "$OPT{N}\_$OPT{'TD'}\_$splitA";
