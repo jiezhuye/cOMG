@@ -322,7 +322,7 @@ sub qsub {
 	my $P  = shift;
 	my $sh = shift;
 	my $base = basename($sh);
-	return("cOMG qsubM -l vf=$f,p=$p -q $q -P $P -d $sh\_qsub -N $base $sh\n")
+	return("cOMG qsubM -f $f -p $p -q $q -P $P -d $sh\_qsub -N $base $sh\n")
 }
 sub qsubM {
 	my($N,$s,$sh) = @_;
