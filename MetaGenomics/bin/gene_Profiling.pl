@@ -1,1 +1,0 @@
-/ifs1/ST_MD/USER/chenwn/bin/profiling/bin/gene_Profiling.pl
