@@ -39,7 +39,7 @@ if($pattern eq "config"){
     `cp $RealBin/default.cfg $cwd/`;
     exit;
 }
-if ($pattern !~ /pe|se|config|-v|-h/){
+if ($pattern !~ /^(pe|se|config|-v|-h)$/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
     print STDERR "$int$path/@ARGV\n";
@@ -71,9 +71,6 @@ print &usage && exit if ( (!defined $path_f)||(defined $help) );
 # ####################
 $step    ||= "1234";
 $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
-#$path_f = abs_path($path_f);
-#$ins_f = "SE" if $pattern =~ /se/i;
-#$ins_f  = abs_path($ins_f) if $ins_f ne "SE";
 $ins_f ||= "SE";
 
 if (defined $config){
@@ -99,12 +96,11 @@ $CFG{"B"} ||= 0;
 
 # scripts under bin
 my $bin = "$Bin/bin";
-my $s_clean  = "readsFilter.dev.pl";
 my $s_SEclean= "OAs1";
 my $s_PEclean= "OAs1";
-my $s_rm     = "rmhost_v1.2.pl";
-my $s_soap   = "soap2BuildAbundance.dev.pl";
-my $s_abun   = "BuildAbundance.dev.pl";
+my $s_rm     = "removeHost";
+my $s_soap   = "SOAPmanager";
+my $s_abun   = "computeGeneAbun";
 # public database prefix
 # project results directiory structure
 my $dir_s = $out_dir."/script";
@@ -290,7 +286,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	if ($step =~ /4/){ # Since step4 contains abundance building which needs operated on sample level, I've got to put them here.
 		open ABUN,">$dir_sS/$sam.abun.sh";
 		print QSUBM &qsubM($sam, 4, "sh $dir_sS/$sam.abun.sh");
-		print ABUN "$cmd $s_abun -ins $ins_f -gl $CFG{'RGL'} -l $dir_sp/$sam.soap.list -o $dir_sp -p $sam\n";
+		print ABUN "$cmd $s_abun $CFG{'RGL'} $ins_f $dir_sp/$sam.soap.list $dir_sp/$sam\n";
 		close ABUN;
 	}
 }
