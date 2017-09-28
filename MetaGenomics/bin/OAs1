@@ -112,7 +112,7 @@ my $rate = sprintf("%.4f",$remainQ / $total);
 my $tag = basename($pfx);
 #my $debugHead = ($debug)?"\tN>$n|Len<$lf|PQ<$Qf|N+Len|N+PQ|Len+PQ|HOMER":"";
 
-print STAT "Total\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\tremain\trate\tSampleTAG(minLen=$minLen,Qcut=$Qcut)\n";
+print STAT "Total\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\tremain\trate\n";
 print STAT "$total\t$max_bp\t$min_bp\t$avgL\t$avgS\t$avgOA\t$avgQ\t$remainQ\t$rate\n";
 if($mode eq "PE"){
 	
