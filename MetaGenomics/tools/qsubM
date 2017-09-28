@@ -33,11 +33,12 @@ $OPT{f} = $opt_f || '1G'; $OPT{f} =~ s/vf=//;
 $OPT{p} = $opt_p || '1';  $OPT{p} =~ s/p=//;
 $OPT{b} = $opt_b || 1;
 $OPT{B} = $opt_B || 0;
+$OPT{m} = $opt_B || 500;
 $OPT{r} = $opt_r || 0;
 
 
 my $maxJob = 1000;
-my $sleepT = $opt_s || 120;
+my $sleepT = $opt_s || 300;
 my $maxTry = $opt_r || 1;
 
 
@@ -121,7 +122,8 @@ sub qsub_and_bak{
 	($OPT{'N'},$OPT{'TD'},$OPT{'B'}) = split(" ",$allJobs[$_]);
 	my $JBname = "$OPT{N}\_$OPT{'TD'}\_$_";
 	$qsub_opt = $JBs{$OPT{'N'}}{$OPT{'TD'}}{$_}{'opt'};
-	my $cmd = "$qsub_opt -o $qsubDir/$JBname.sh.o -e $qsubDir/$JBname.sh.e -N $JBname $qsubDir/$JBname.sh\n";
+    my $JBtag = "$OPT{N}\_$OPT{'TD'}\_0";
+	my $cmd = "$qsub_opt -o $qsubDir/$JBname.sh.o -e $qsubDir/$JBname.sh.e -N $JBtag $qsubDir/$JBname.sh\n";
 	print $cmd;
 	my $qmess;
 	while($qmess = `$cmd`){
@@ -142,14 +144,16 @@ sub qsub_and_bak{
 		$UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'num'} ++;
 		$UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'jbID'} .= "$jbID ";
 		# Backup
-		my $toBakN = $OPT{'B'};
-		while($toBakN){
+		my $BakN = 1;
+		while($BakN<=$OPT{'B'}){
+            $JBtag = "$OPT{N}\_$OPT{'TD'}\_".$BakN;
+            $cmd="$qsub_opt -o $qsubDir/$JBname.$BakN.o -e $qsubDir/$JBname.$BakN.e -N $JBtag $qsubDir/$JBname.sh\n";
 			chomp(my $qmess = `$cmd`);
 			if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
 				`qhold $1`;
 				$BAK{$JBname}{$1} = $cmd;
-				print DEBUG "$1\t$OPT{'N'}\_$OPT{'TD'}\tBAK\_$toBakN\tHOLD\n";
-				$toBakN -- ;
+				print DEBUG "$1\t$OPT{'N'}\_$OPT{'TD'}\tBAK\_$BakN\tHOLD\n";
+				$BakN ++ ;
 			}
 		}
 		last;
@@ -158,18 +162,20 @@ sub qsub_and_bak{
 
 sub check_job{
 	my($userName,$error,$wait,$run) = @_;
-	my %dead;
-	&dead_nodes(\%dead);
+    # No longer needed dead node check.
+#	my %dead;
+#	&dead_nodes(\%dead);
 	#check running job
 	my %running;
-	my $qsub_stat = `qstat -xml -u $userName`;
+    #my $qsub_stat = `qstat -xml -u $userName`;
+    my $qsub_stat = &get_log($userName,$sleep);
 	while($qsub_stat =~ /<JB_job_number>(\d+?)<\/JB_job_number>.*?
 		<JB_name>(.+?)<\/JB_name>.*?
 		<state>(.+?)<\/state>.*?
 		<queue_name>(.*?)<\/queue_name>
 		/gxs){
 		my ($jbID, $jbname, $jbstat, $jbqueue) = ($1, $2, $3, $4);
-		$running{$jbID} = $jbname;
+		$running{$jbID} = $jbname if exists $$run{$jbID};
 		if(exists $$run{$jbID} and $jbstat ne "hqw"){
 			if ($jbstat eq 'r'){
 				unless(defined $NODE{$jbID}){
@@ -259,7 +265,9 @@ sub check_job{
 					}
 					`echo $bakJob backup $jbname.sh go! >>$shell.error`;
 					$running{$bakJob} = $jbname;
-				}
+				}else{
+                     delete $$run{$id};
+                }
 				$sleep=0;
 			}
 		}
@@ -277,6 +285,22 @@ sub dead_nodes{
 	}
 }
 
+sub get_log{
+    my $usr = shift; # User name
+    my $st = shift;  # sleep time interval
+    my $log = "/tmp/qstat.xml.$usr.log";
+    if ( -e $log ){
+        my $mt=`date +%s` - `date -r $log +%s`;
+        if ($mt > $st){
+            `qstat -xml -u $usr > $log`
+        }
+    }else{
+        `qstat -xml -u $usr > $log`
+    }
+    my $qstat = `cat $log`;
+    return($qstat);
+}
+
 sub usage{
 	print <<EOD;
 Desc: A new program which could submit backup jobs to queue in advancd,
@@ -290,7 +314,7 @@ usage: perl $0 [options] shell_script
 		-P  project_name, default not
 		-f  numeric with unit , e.g: xxG/xxM/xxm. Default is '1G'.
 		-p  numeric, default is '1'.
-		-b  set number of lines to form a job, force to be 1 in this version
+		-b  set number of lines to form a job
 		-B  Backup job number, default 0
 		-m set the maximum number of jobs to throw out, unlimited in this version
 		-s  set interval time of checking by qstat, default 120 seconds

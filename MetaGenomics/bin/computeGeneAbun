@@ -1,5 +1,6 @@
 #!/usr/bin/perl -w
 use strict;
+use Cwd 'abs_path';
 unless(4==@ARGV) {
 	&usage;
 	exit;
@@ -26,7 +27,8 @@ while(<IN>) {
 close IN;
 
 ################ reading insert size
-if ($insertsize ne "SE"){
+if ($insertsize ne "SE" && $insertsize !~ /^\d+$/){
+    $insertsize = abs_path($insertsize);
 	open IN,$insertsize or die "$insertsize $!\n";
 	while(<IN>) {
 		chomp;
@@ -48,10 +50,15 @@ while(<IN>) {
 #		$j=$1."\-".$2.$3;
 #	}
 	my $tmp=$_;
-    if ($insertsize ne "SE" && not exists $insert{$j}) {
-        die "Unknown InsertSize of sample $j,\nplease check!\n";
+    my $ins="";
+    if($insertsize =~ /^\d+$/ || $insertsize eq "SE"){
+        $ins= $insertsize;
+    }else{
+        die "Unknown InsertSize of sample $j,\nplease check!\n" if  not exists $insert{$j};
+        $ins=$insert{$j};
     }
-	&stat_readsnum($tmp,$insert{$j});
+
+	&stat_readsnum($tmp,$ins);
 }
 close IN;
 
@@ -72,12 +79,17 @@ for($i=0;$i<@genename;++$i) {
 open OT,">$out.abundance" or die "$out.abundance $!\n";
 open ST,">$out.abundance.size" or die "cannot wirte to $out.abundance.size.\n $!\n";
 print ST "$totalreads\n";close ST;
-print OT "ID\treads_pairs\tbase_abundance\treads_abundance\n";
+print OT "ID\treads_pairs\treads_proportion\tgene_abundance\n";
 for($i=0;$i<@genename;++$i) {
 	print OT
 		"$ids{$genename[$i]}\t$readsnum{$genename[$i]}\t",$readsnum{$genename[$i]}/$totalreads,"\t",$abundance{$genename[$i]}/$totalabundance,"\n";
 }
 close OT;
+
+#compress
+`gzip -f $out.abundance`;
+print STDERR "reads abundance file built\n";
+exit;
 
 ###########################################################
 ################ submit stat reads number function
@@ -99,6 +111,8 @@ sub stat_readsnum{
 			}
 		}
 		close PE;
+
+        # Following SE means the single alignment under PE mode;
 	}elsif($in =~ /\.se$/ or $in =~ /\.se\.gz$/) {
 		if($in =~ /\.se$/) { 
 			open SE,$in or die "$in $!\n";
@@ -110,16 +124,12 @@ sub stat_readsnum{
 			chomp;
 			@tmp=split;
 			if($tmp[3] ==1) {
-				if($tmp[6] eq '+') {
-					if(($lengths{$tmp[7]}-$tmp[8])<$inser+100) {
-						$tmp[0]=~/^(\S+)\/[12]/;
-						$past{$tmp[7]}{$1}=1;
-					}
-				} elsif($tmp[6] eq '-') {
-					if(($tmp[8])<$inser-$tmp[5]+100) {
-						$tmp[0]=~/^(\S+)\/[12]/;
-						$past{$tmp[7]}{$1}=1;
-					}
+				if($tmp[6] eq '+' && $lengths{$tmp[7]}-$tmp[8] < $inser+100 ) {
+					$tmp[0]=~s/\/[12]//;
+					$past{$tmp[7]}{$tmp[0]}=1;			
+				}elsif($tmp[6] eq '-' && $tmp[8] < $inser-$tmp[5]+100 ){
+					$tmp[0]=~s/\/[12]//;
+					$past{$tmp[7]}{$tmp[0]}=1;	
 				}
 			}
 		}
@@ -137,12 +147,13 @@ sub stat_readsnum{
 ################ submit usage function
 sub usage{
 	print STDERR "Description
-        This programme is to creat profiling result!
+        This programme is to creat profiling result.
+
         Usage:$0 [reference.length.list] [insertsize.list] [soap.list] [outfile-prefix]
         In this programme
-		[insertsize.list]	a couple of paired reads in pair end is one pair,
-					a couple of single end only within insert size is one pair.
-					But SINGLE-END reads DO NOT exist a insert issue, so just enter \"SE\" when you perform a single-end reads abundance.
+            a couple of paired reads in pair end is one pair,
+            a couple of single end only within insert size is one pair.
+            But SINGLE-END reads DO NOT exist a insert issue, so just enter \"SE\" when you perform a single-end reads abundance.
         5th verison by Wed Jul 21 09:27:02 2010
         Author Libranjie,zhouyuanjie\@genomics.org.cn
 		Modifier fangchao\@genomics.cn\n"

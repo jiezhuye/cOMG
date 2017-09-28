@@ -192,16 +192,17 @@ sub get_paired_fq{
 	while(<I1>){
 		$total_num++;
 		chomp;
-		$name1 = $_;
+		my @heads = split /\s+/, $_;
+        $name1 = $heads[0];
 		$name1 =~ s/^\@//;
-		$name1 =~ /^(\S+)\/[12]/;
-		$name1 = $1;
+		$name1 =~ s/\/[12]//;
 		
 		$name2 = <I2>;
 		chomp $name2;
+        my @heads2 = split /\s+/, $name2;
+        $name2 = $heads2[0];
 		$name2 =~ s/^\@//;
-		$name2 =~ /^(\S+)\/[12]/;
-		$name2 = $1;
+		$name2 =~ s/\/[12]//;
 		die "reads file error. Line $.: name1:$name1 ne name2:$name2\n" if $name1 ne $name2;
 		if(exists $remove{$name1}){
 			<I1>;<I1>;<I1>;
