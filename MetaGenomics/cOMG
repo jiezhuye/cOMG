@@ -133,6 +133,7 @@ while(@paths>0){
 		print PATH $_ ;
 		chomp;
 		my @a = split;
+        $a[2] = abs_path($a[2]);
 		my ($sam,$pfx,$path) = @a;
 		push @{$SAM{$sam}{$pfx}}, $path;
 	}
