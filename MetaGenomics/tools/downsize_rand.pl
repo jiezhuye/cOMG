@@ -37,10 +37,15 @@ if ($time < 0){
 }else{
 	$time = ($time < $targetSize)?$time:$targetSize;
 	my $one  = ($time < $targetSize)?-1:1;
-	while($time){
-	  	my $point=int(rand(@rands));
+	my %POI;
+    my $point;
+    while($time){
+        while($POI{$point}==1){
+	  	    $point=int(rand(@rands));
+        }
+        $POI{$point}=1;
 	    $reads_num{$rands[$point]} += $one;
-		splice(@rands,$point,1);
+        #splice(@rands,$point,1);
 	    $time --;
 	}
 }
