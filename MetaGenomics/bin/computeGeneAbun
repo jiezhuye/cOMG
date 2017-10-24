@@ -154,7 +154,6 @@ sub usage{
             a couple of paired reads in pair end is one pair,
             a couple of single end only within insert size is one pair.
             But SINGLE-END reads DO NOT exist a insert issue, so just enter \"SE\" when you perform a single-end reads abundance.
-        5th verison by Wed Jul 21 09:27:02 2010
-        Author Libranjie,zhouyuanjie\@genomics.org.cn
+        Originally written by Libranjie,zhouyuanjie\@genomics.org.cn
 		Modifier fangchao\@genomics.cn\n"
 }
