@@ -40,7 +40,7 @@ if($pattern eq "config"){
     exit;
 }
 if ($pattern !~ /^(pe|se|config|-v|-h)$/){
-	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
+	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/utilities/$pattern")?"$Bin/utilities":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
     print STDERR "$int$path/@ARGV\n";
 	if(system("$int$path/@ARGV")){
