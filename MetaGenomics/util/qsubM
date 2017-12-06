@@ -244,15 +244,17 @@ sub check_job{
 							$_ = shift @nextJobs;
 							`qrls $_`;
                            chomp($logTime = `date +%F" "%R`);
-                            print DEBUG "$logTime\t$_\t$$run{$_} released!\n";
+                            print DEBUG "$logTime\t$jbname finish and $_\t$$run{$_} release!\n";
 						}
 						$sleep=0;
 					}
 				}
 				# delete backup
+
 				foreach my $jb (sort keys %{$BAK{$jbname}}){
 					`qdel $jb`;
 					delete $BAK{$jbname}{$jb};
+                    print DEBUG "$logTime\t Backup $jbname: $jb delete!\n"
 				}
 			}else{
 				`echo $jbname has not finished! >>$shell.error`;
@@ -267,18 +269,22 @@ sub check_job{
 					`qrls $bakJob`;
 					$$run{$bakJob} = $jbname;
 					delete $BAK{$jbname}{$bakJob};
+                    print DEBUG "$logTime\t$jbname failed and backup $bakJob release!\n";
+                    `echo $bakJob backup($$error{$jbname}) $jbname.sh go! >>$shell.error`;
                     # Re-bak
                     if($$error{$jbname} <$maxTry){
     					chomp(my $qmess = `$BAK{$jbname}{$bakJob}`);
     					if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
     						`qhold $1`;
     						$BAK{$jbname}{$1} = $BAK{$jbname}{$bakJob};
+                            print DEBUG "$logTime\t$jbname re-bak $bakJob submitted!\n";
     					}
-	    				`echo $bakJob backup $jbname.sh go! >>$shell.error`;
+	    				`echo $bakJob backup($$error{$jbname}) $jbname.sh submited and hold! >>$shell.error`;
 	    				$running{$bakJob} = $jbname;
                     }
 				}else{
                      delete $$run{$id};
+                     print DEBUG "$logTime\t$jbname reach retry maximum and then were dropped.\n";
                 }
 				$sleep=0;
 			}

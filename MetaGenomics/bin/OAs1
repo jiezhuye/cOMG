@@ -22,18 +22,17 @@ $Qsys ||= 33;
 my @fqs = split /,/,$fq;
 my $mode= (@fqs==2)?"PE":"SE";
 
-open F1,"gzip -dc $fqs[0] |",or die "error\n";
 if($mode eq "PE"){
-	open F1,"gzip -dc $fqs[0] |",or die "error\n";
-	open O1,"|gzip >$pfx.clean.1.fq.gz" or die "error OUT\n";
-	open F2,"gzip -dc $fqs[1] |",or die "error\n";
-	open O2,"|gzip >$pfx.clean.2.fq.gz" or die "error OUT\n";
-	open O3,"|gzip >$pfx.clean.single.fq.gz" or die "error OUT\n";
+	open F1,"gzip -dc $fqs[0] |" or die "Input 1 error:$!\n";
+	open O1,"|gzip >$pfx.clean.1.fq.gz" or die "Output 1 error:$!\n";
+	open F2,"gzip -dc $fqs[1] |" or die "Input 2 error:$!\n";
+	open O2,"|gzip >$pfx.clean.2.fq.gz" or die "Output 2 error:$!\n";
+	open O3,"|gzip >$pfx.clean.single.fq.gz" or die "Output 3 error:$!\n";
 }else{
-	open F1,"gzip -dc $fqs[0] |",or die "error\n";
-	open O1,"|gzip >$pfx.clean.fq.gz" or die "error OUT\n";
+	open F1,"gzip -dc $fqs[0] |",or die "Input 1 error:$!\n";
+	open O1,"|gzip >$pfx.clean.fq.gz" or die "Output 1 error:$!\n";
 }
-open STAT,"> $pfx.clean.stat_out",or die "error\n";
+open STAT,"> $pfx.clean.stat_out",or die "Open log file error:$!\n";
 
 my %STAT;
 my ($total, @remainQ, @sum_bp, @sum_oa, @sum_Q, @sum_s) = ();

@@ -40,11 +40,10 @@ if($pattern eq "config"){
     exit;
 }
 if ($pattern !~ /^(pe|se|config|-v|-h)$/){
-	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/tools/$pattern")?"$Bin/tools":"No such script!.";
+	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/util/$pattern")?"$Bin/util":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
     print STDERR "$int$path/@ARGV\n";
 	if(system("$int$path/@ARGV")){
-		#die "ERR $?: $cmd $pattern failed!\n";
 		exit(1);
 	}else{
 		exit;
@@ -307,8 +306,8 @@ exit;
 # ####################
 sub version {
 	print <<VERSION;
-    version:    v0.15-dev
-    update:     20160111-20170726
+    version:    v0.3
+    update:     20160111-20171024
     author:     fangchao\@genomics.cn
 VERSION
 };

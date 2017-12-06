@@ -12,7 +12,7 @@ my(@order,%list,@info,$i,%class,%cover,%Count,%sum_abun);
 open IN,"<$list_f" || die "read $list_f $!\n";
 while(<IN>) {
     chomp;
-    @info=split /\t/;
+    @info=split /\t|\s+/;
     my $name =$1;
     $list{$info[0]}=$info[1];
 	push(@order,$info[0]);

@@ -3,13 +3,12 @@
 ############################################################
 #	Copyright (C) 2012 BGI-shenzhen-MicrobeGroup
 #	Written by Yuanlin Guan (guanyuanlin@genomics.org.cn)
-#	updated by fangchao@genomics.cn
+#	Modified by fangchao@genomics.cn
 #	Version: 1.2 (20160418)
 ############################################################
 use strict;
 use Getopt::Std;
 use FindBin;
-#use PerlIO::gzip; This pack frequently goes wrong.
 sub openM {	#a sub of open file handle method
 	my $f =shift;my $m =($f =~ /\.gz$/)?"gzip -dc $f|":"$f";
 	return($m);

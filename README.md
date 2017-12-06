@@ -1,13 +1,21 @@
 # Omics_pipeline
-This pipeline is built to ease my pressure for Multiple omics analysis. In this version, I'm focused on the process of data polishing.
+This pipeline is built to ease my pressure for Multiple omics analysis. In this version, I'm focused on the process of data polishing of metagenome-wide analysis.
 
 # Get Start & Usage
 
-本项目目前仅包含**Metagenomics宏基因组学标准流程**和**Lipidomics脂质组学分析流程**。
+本项目目前包含**Metagenomics宏基因组学标准流程**和**Lipidomics脂质组学分析流程(暂停维护)**。
 
-### Metagenomics pipeline
+## Metagenomics pipeline
 
-在集群工作目录下`clone`本仓库并将主程序添加到环境变量中。
+### Install
+
+**Method 1 (Recommand):** 通过加载集群的[binboard](https://biogit.cn/META/Binboard#usage)配置即可直接调用。
+
+```
+echo '. /ldfssz1/ST_META/share/flow/metaEnv' >> ~/.bashrc
+```
+
+**Method 2:** 自定义配置本流程：
 
 ```
 cd /your/dir/
@@ -15,17 +23,23 @@ clone git@biogit.cn:Fangchao/Omics_pipeline.git
 ln -s /your/dir/Omics_pipeline/MetaGenomics/cOMG ~/bin/
 ```
 
-#### Usage:
+> :warning: 目前集群仅有**登录节点、安装节点**可访问**biogit.cn** ，且需要**添加域名转发配置**(如下)：
+>
+> `echo -e "Host biogit.cn\nHostName 172.17.11.248" >> ~/.ssh/config`
+
+### Usage:
 
 ```
 cOMG 		#直接执行命令可以查看使用说明
 usage:
-        cOMG <pe|se> [options]
-pattern
+        cOMG <pe|se|config|cmd> [options]
+mode
         pe|se           pair end | single end
+        config			generate a config file template
+        cmd				directely call a sub-script under bin/ or util/
 options:
         -p|path         :[essential]sample path file (SampleID|fqID|fqPath)
-        -i|ins          :[essential for pair-end seq]insert info file
+        -i|ins          :[essential for pe mode]insert info file or a number of insert size
         -s|step         :functions,default 1234
                              1       trim+filter, OA method
                              2       remove host genomic reads
@@ -39,9 +53,44 @@ options:
 
 **path file**: 用于记录raw data文件位置和id信息的文件，每行三列分别记录下**样本编号**, **数据编号** 和 **fq文件路径**。
 
-- `样本编号`：生物学，统计学意义上的样本个体，用于后续分析的基本个体
-- `数据编号`：如果同一个样本进行多次测序，则会产生多个数据，此时需要用数据编号来区分（可以使文库号，日期，批次，等等）。`注意`:拥有相同`样本编号`的多个数据会被最终合并计算相对丰度。
+- `样本编号`：生物学，统计学意义上的样本个体，用于后续分析的基本个体。
+
+  > :warning: 在相对丰度计算步骤中，相同`样本编号`的数据会合并计算到一个结果文件中，并以`样本编号`作为结果文件前缀；
+  >
+  > :warning: pe模式中，来自同一个样本的\*1.fq和\*2.fq应使用相同的`样本编号`。
+  >
+  > :warning: 请避免以数字开头
+
+- `数据编号`：如果同一个样本进行多次测序，则会产生多个数据，此时需要用数据编号来区分（可以使文库号，日期，批次，等等）。
+
+  > :warning: 拥有相同`数据编号`的多个数据会被认为来自同一批次；
+  >
+  > ⚠  前三步骤的结果文件均以`数据编号`作为前缀；
+  > ⚠ pe模式中，来自同一个数据的\*1.fq和\*2.fq应使用相同的`数据编号`
+  >
+  > :warning: 请避免以数字开头
+
 - `fastq路径`: 必须是工作环境可以访问到的路径位置
+
+  > :warning: 请按 read1，read2，single read（若有）的顺序排列每个数据的输入数据路径
+
+e.g:
+
+```
+column -t test.5samples.path
+t01        ERR260132  ./fastq/ERR260132_1.fastq.gz
+t01        ERR260132  ./fastq/ERR260132_2.fastq.gz
+t02.sth    ERR260133  ./fastq/ERR260133_1.fastq.gz
+t02.sth    ERR260133  ./fastq/ERR260133_2.fastq.gz
+t03_rep    ERR260134  ./fastq/ERR260134_1.fastq.gz
+t03_rep    ERR260134  ./fastq/ERR260134_2.fastq.gz
+t04_rep_2  ERR260135  ./fastq/ERR260135_1.fastq.gz
+t04_rep_2  ERR260135  ./fastq/ERR260135_2.fastq.gz
+t05        ERR260136  ./fastq/ERR260136_1.fastq.gz
+t05        ERR260136  ./fastq/ERR260136_2.fastq.gz
+```
+
+
 
 **config file**: 由于流程涉及到的分析步骤较多，对于每个具体工具的参数定义，统一放在配置文件中进行处理：
 
@@ -50,15 +99,15 @@ options:
 
 ### Database location
 db_host = $META_DB/human/hg19/Hg19.fa.index	#宿主参考基因集db前缀，用于去除宿主来源的reads
-db_meta = $META_DB/1267sample_ICG_db/4Group_uniqGene.div_1.fa.index,$META_DB/1267sample_ICG_db/4Group_uniqGene.div_2.fa.index #参考基因集db前缀，多个文件可以用逗号分隔
+db_meta = $META_DB/1267sample_ICG_db/4Group_uniqGene.div_1.fa.index,$META_DB/1267sample_ICG_db/4Group_uniqGene.div_2.fa.index #参考基因集db前缀，多套索引可以用逗号分隔
 
 ### reference gene length file
 RGL  = $META_DB/IGC.annotation/IGC_9.9M_update.fa.len #与参考基因集匹配的每个基因的长度信息，用于计算相对丰度
 ### pipeline parameters
-PhQ = 33        		#reads Phred Quality system: 33 or 64.
-mLen= 30                #minimal read length allowance
-seedOA=0.9				
-fragOA=0.8
+PhQ = 33        		# reads Phred Quality system: 33 or 64.
+mLen= 30                # minimal read length allowance
+seedOA=0.9			    # OA过滤方法中，对种子部分的OA阈值（准确率） [0,1]
+fragOA=0.8				# OA过滤方法中，对截取全长的OA阈值（准确率） [0,1]
 
 qsub = 1234             #Following argment will enable only if qusb=on, otherwise you could commit it
 q   = st.q              #queue for qsub
@@ -79,7 +128,8 @@ r   = 10                #repeat time when job failed or interrupted
 上述配置文件准备完毕后，运行本脚本可以生成工作目录：
 
 ```
-cOMG se -p sample.path.file -o demo
+cd t
+cOMG se -p demo.input.lst -c demo.cfg -o demo.test
 ```
 
 随后进入工作目录，检查脚本无误后可以启动执行脚本：
@@ -87,7 +137,7 @@ cOMG se -p sample.path.file -o demo
 ```
 sh RUN.batch.sh			# 模式一，全部样本完成当前步骤后才会进入下一步骤；
 sh RUN.linear.1234.sh	# 模式二，每个样本依次运行每个步骤，相互不影响；
-sh RUN.qsubM.sh			# 模式三，同上，采用改进的qsub管理脚本，可自动处理异常情况
+sh RUN.qsubM.sh			# 模式三，同上，采用改进的qsub管理脚本，可自动处理异常情况（推荐）
 ```
 
 完成后可以执行`sh report.stat.sh`打印报告表格。
@@ -98,34 +148,4 @@ sh RUN.qsubM.sh			# 模式三，同上，采用改进的qsub管理脚本，可�
 
 ### Lipidomics pipeline
 
-### What do I wanna perform?
-As a pipeline, I plan to orgainze the workshop directory like this:
-```
-./                 #output directory
-|-- pip.work.sh		# A script contained all function set to run. A	MAIN SWITCH.
-|-- Shell			# A directory contains all of scripts organized under steps order.
-|-- Results			# A directory contains all of the results (exactly, including the intermediate results)
-```
-And all the users need to do is preparing a config file and write them into a script to build the workshop above.
-Here is an example:
-
- `/ifs1/ST_MD/PMO/F13ZOOYJSY1389_T2D_MultiOmics/Users/fangchao/lipidomics.20151118/pip.config.sh`
-
-For a better understanding of the pipeline's logic, a tree following shows you how the pip.work.sh works:
-```
-./pip.work.sh
-	|--> sh step1.sh
-			|--> sh function1.sh
-					|--> sh/perl sub-function scripts/software/program [parameters]
-			|--> sh function2.sh
-					|--> sh/perl sub-function scripts/software/program [parameters]
-			...
-```
-As you can see, the sub-funtion tools could come from websites, packages, or just wirtten by yourself. And what you need to do is to locate the scripts pathway and make sure the parameters are friendly for most of the naming manners, such as the capablility to read and locate an absolute path. Thus you can leave the rest things to the pipeline.
-
-In the following step, I'll add your scripts into pipeline and distribute the unified input parameters as well as a proper output directory. Or some addtional options for the function of your part.
-
-
-```
-
-```
+See detail [here](/Lipidomics/README.md).
