@@ -15,6 +15,12 @@ USAGE
 	exit;
 }
 sub openMethod {shift;return(($_=~/\.gz$/)?"gzip -dc $_|":"$_")}
+### Load accuracy table ###
+my %P2A;
+$P2A{0}= -10;
+for (my $p=1;$p<=50;$p++){
+    $P2A{$p} = log(1-10**(-$p/10))/log(10);
+}
 
 ### BODY ###
 my ($fq,$pfx,$Qsys,$minLen,$Scut,$Qcut) = @ARGV;
@@ -148,7 +154,7 @@ sub ca1_cut {
     my $sysQ = shift;
 	my $seq = shift;
     my $q = shift;
-    my ($ca, $min, $tmp,$oa0, $oa1, $s,$p) = (1, 0, 1, 1, 1, 0, 0);
+    my ($ca, $tmp,$oa0, $oa1, $s,$p) = (1, 1, 1, 1, 0, 0);
     my @Q;
 	my @PQ;
     # cal phrd Q
@@ -156,47 +162,49 @@ sub ca1_cut {
         $_ = substr($q,$p,1);
         $_ = ord($_) - $sysQ;
 		push @PQ, $_;
-        $_ = 1 - 10**(-$_/10);
-        $_ = ($_==0)?0.1:$_;
-        push @Q, $_;
+#        $_ = $P2A{$_};
+        push @Q, $P2A{$_};
+#       push @Q, $_;
         $p ++;
     }
     # cal first seed OA
     $p = 0;
-    my @seedOA = (1);
+    my @seedOA = (0);
     while($p<30){
-        $seedOA[0] *= $Q[$p];
+        $seedOA[0] += $Q[$p];
         $p ++;
     }
     # choose best seed
     while($p<length($q)){
-        $seedOA[$p-29] = $seedOA[$p-30] * $Q[$p] / $Q[$p-30];
+        $seedOA[$p-29] = $seedOA[$p-30] + $Q[$p] - $Q[$p-30];
         $s = ($seedOA[$p-29] > $seedOA[$s])?$p-29:$s;
         $p++;
-        last if $seedOA[$s]  >= $Sc;
+        last if 10**$seedOA[$s]  >= $Sc;
     }
     # trim
 #    $ca = $seedOA[$s];
     $p = $s + 30;
     $ca = $seedOA[$s];
+    my $min = $Q[$p]; $p++;
     while($p<length($q)){
         my $acc = $Q[$p];
 #        $oa0 *= $acc;
         if($acc < $min){
-            $oa1 = $ca * $min;
+            $oa1 = $ca + $min;
             $min = $acc;
         }else{
-            $oa1 = $ca * $acc;
+            $oa1 = $ca + $acc;
         }
-        last if $oa1 < $cut;
+        last if 10**$oa1 < $cut;
         $p ++;
         $ca = $oa1;
 
     }
-	my $PQ =0;
-	for(my $i=$s;$i<$p;$i++){
-		$PQ += $PQ[$i];
-	}
+    $ca = 10**$ca; 
+	my $PQ =sprintf("%2d",-log(1-$ca)/log(10)*10);
+#	for(my $i=$s;$i<$p;$i++){
+#		$PQ += $PQ[$i];
+#	}
 	$p   = $p - $s;
 	$seq = substr($seq,$s,$p);
 	$q   = substr($q,$s,$p);
