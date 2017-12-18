@@ -11,15 +11,18 @@ srand($originSize);
 my (%reads_num,@rands);
 open I,&openMethod($reads) or die "$!\n";
 open ST, &writeM($out) or die "$!\n";
-my $total_reads=$originSize;
+my $total_reads=$originSize*$single_double;
+$targetSize *= $single_double;
+
 my $k=0;
 while(<I>)
 {
     chomp;
     my @temp=split;
 	next if $.==1 && $temp[1]=~/[a-z]/;
-	$total_reads+= $temp[1] * $single_double if $originSize==0;
-    $reads_num{$temp[0]}=($originSize-2*$targetSize<0)?$temp[1] * $single_double:0;
+	$total_reads+= $temp[1] * $single_double unless defined $originSize;
+    #$reads_num{$temp[0]}=($originSize-2*$targetSize<0)?$temp[1] * $single_double:0;
+    $reads_num{$temp[0]}=($originSize-2*$targetSize<0)?$temp[1]:0;
 	if ($temp[1] >0){
 		my $t=$temp[1] * $single_double;
 		while($t){
@@ -36,11 +39,11 @@ if ($time < 0){
 	exit;
 }else{
 	$time = ($time < $targetSize)?$time:$targetSize;
-	my $one  = ($time < $targetSize)?-1:1;
+	my $one  = ($time < $targetSize)?(-1/$single_double):(1/$single_double);
 	my %POI;
-    my $point;
+    my $point = int(rand(@rands));
     while($time){
-        while($POI{$point}==1){
+        while(defined $POI{$point}){
 	  	    $point=int(rand(@rands));
         }
         $POI{$point}=1;
