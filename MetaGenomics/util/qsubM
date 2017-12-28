@@ -153,6 +153,7 @@ sub qsub_and_bak{
   		# Backup loop
   		my $BakN = 0;
 			$BAK{$JBname}{'cmd'} = $cmd;
+			@{$BAK{$JBname}{'ID'}} = ();
 			my $maxBak = ($OPT{'B'}<=$maxTry)?$OPT{'B'}:$maxTry;
   		while($BakN < $maxBak){
 				chomp(my $qmess = `$cmd`);
@@ -182,10 +183,9 @@ sub failed_job_reRun{
 		#prepare for re-try
 		`qdel $jbID`;
 		`echo "=== Re-try ===" >> $qsubDir/$jbname.sh.o`;
-		`echo "=== Re-try ===" >> $qsubDir/$jbname.sh.e`;
 		chomp($logTime = `date +%F" "%R`);
 
-		if(exists $BAK{$jbname}{'ID'}){
+		if(@{$BAK{$jbname}{'ID'}}){
 			#my $bakJob = (sort {$a <=> $b} keys %{$BAK{$jbname}{'ID'}})[0];
 			my $bakJob = shift @{$BAK{$jbname}{'ID'}};
 			`qrls $bakJob`;
@@ -260,7 +260,9 @@ sub check_job{
 					print DEBUG "$logTime\t$jbname\t$jbID\tCanceled as its front steps failed.\n";
 					`qdel $jbID`;
 					delete $$run{$jbID};
-					&removeBak($jbname,"canceled");
+					if(@{$BAK{$jbname}{'ID'}}){
+						&removeBak($jbname,"canceled");
+					}
 					$UNDONE{$pfx}{$td}{'num'} = "Exceed";
 				}
       }elsif($jbstat eq 'r'){
@@ -312,7 +314,9 @@ sub check_job{
 					}
 				}
 				# delete backup
-				&removeBak($jbname,"completed");
+				if(@{$BAK{$jbname}{'ID'}}){
+					&removeBak($jbname,"completed");
+				}
 			}else{
 				`echo $jbname.sh did not finished! >>$shell.log`;
 				my $node = ($NODE{$id})?$NODE{$id}:"unknown_node";
