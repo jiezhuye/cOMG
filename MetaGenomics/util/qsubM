@@ -7,8 +7,8 @@ my $pwd = getcwd();
 
 my($qsub_opt,@allJobs,$qsubDir,$shell);
 
-use vars qw($opt_d $opt_N $opt_q $opt_P $opt_f $opt_p $opt_b $opt_B $opt_m $opt_s $opt_r $opt_h);
-getopts("d:N:q:P:f:p:b:B:m:s:r:h");
+use vars qw($opt_d $opt_N $opt_q $opt_P $opt_f $opt_p $opt_b $opt_B $opt_m $opt_s $opt_r $opt_h $opt_H);
+getopts("d:N:q:P:f:p:b:B:m:s:r:h:H");
 
 if($opt_h or @ARGV == 0){
 	&usage();
@@ -21,8 +21,7 @@ $qsubDir = $opt_d || (split /\//,$shell)[-1]."_qsub";
 `rm -rf $qsubDir` if(-e $qsubDir);
 `mkdir $qsubDir`;
 `rm $shell.log` if(-e "$shell.log");
-`rm $shell.error` if(-e "$shell.error");
-`rm $shell.finished` if(-e "$shell.finished");
+
 
 my %OPT;
 
@@ -33,16 +32,16 @@ $OPT{f} = $opt_f || '1G'; $OPT{f} =~ s/vf=//;
 $OPT{p} = $opt_p || '1';  $OPT{p} =~ s/p=//;
 $OPT{b} = $opt_b || 1;
 $OPT{B} = $opt_B || 0;
-$OPT{m} = $opt_B || 500;
+$OPT{m} = $opt_m || 500; # Max queue number
 $OPT{r} = $opt_r || 0;
+$OPT{H} = $opt_H || 1;
 
 
-my $maxJob = 1000;
+my $maxJob = $OPT{m};
 my $sleepT = $opt_s || 300;
-my $maxTry = $opt_r || 1;
+my $maxTry = $OPT{r};
 
-
-my ($splitA, $splitN, %JBs, %BAK, %UNDONE, %runJob, %error, @wait, %NODE, $logTime);
+my ($job_seq, $splitN, %JBs, %BAK, %UNDONE, %runJob, %error, @wait, %NODE, $logTime);
 open DEBUG,">$shell.debug"  or die "can\'t open $shell.debug\n";
 open EQW,">>$shell.dead" or die "can\'t open $shell.dead\n";
 print "$shell\n";
@@ -50,141 +49,224 @@ open IS,$shell or die "can\'t open shell.sh: $shell\n";
 while(<IS>){
 	chomp;
 	my $cmd;
-    $OPT{'TD'} ||= 0;
-	$splitA++;
-    if($_ =~ /=/){
-		my @opts = split;
-		while($opts[0] =~/^(\S+)=(\S+)$/){
+  $OPT{'TD'} ||= 0;
+	$job_seq ++;
+  if($_ =~ /=/){
+		my @opts = split();
+		while($opts[0] =~ /^(\S+)=(\S+)$/){
 			$OPT{$1} = $2;
 			shift @opts;
 		}
 		$cmd = join(" ", @opts);
 	}else{
-        my $cyc = $OPT{b};
-        $cmd = $_;
-        $cyc --;
-        while($cyc>0){
-            last if(eof(IS));
-            my $next = <IS>;
-            chomp($next);
-            $cmd .= "\n".$next;
-            $cyc -- ;
-        }
+    my $cyc = $OPT{b};
+    $cmd = $_;
+    $cyc --;
+    while($cyc>0){
+      last if(eof(IS));
+      my $next = <IS>;
+      chomp($next);
+      $cmd .= "\n".$next;
+      $cyc -- ;
+    }
 	}
-    $OPT{'N'} = 'Job_'.$OPT{'N'} if $OPT{'N'} =~ /^[0-9]/;
-    $JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}  = $cmd;
-	
-    my $JBname = "$OPT{N}\_$OPT{'TD'}\_$splitA";
-	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'opt'} = "qsub -cwd -S /bin/bash -l vf=$OPT{'f'},p=$OPT{'p'} ";
-	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'opt'}.= "-q $OPT{'q'} -P $OPT{'P'} ";
+  $OPT{'N'} = 'N.'.$OPT{'N'} if $OPT{'N'} =~ /^[0-9]/;
+#  $JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'sh'}  = $cmd;
+
+  my $JBname = "$OPT{N}\_$OPT{'TD'}\_".sprintf("%05d",$job_seq);
+	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'opt'} = "qsub -cwd -S /bin/bash -l vf=$OPT{'f'},p=$OPT{'p'} ";
+	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'opt'}.= "-q $OPT{'q'} -P $OPT{'P'} ";
 
 	open  OUTS,">$qsubDir/$JBname.sh" or die "can\'t open split shell: $qsubDir/$JBname.sh\n";
 #	print OUTS "sleep  "sleepT + 60)."\n";
-#    print OUTS "sleep 10\n";
-	print OUTS "$JBs{$OPT{'N'}}{$OPT{'TD'}}{$splitA}{'sh'}\n";
-	print OUTS "[ \$? -eq 0 ] && echo this-work-is-complete\n";
+# print OUTS "sleep 10\n";
+#	print OUTS "$JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'sh'}\n";
+	print OUTS "$cmd\n[ \$? -eq 0 ] && echo this-work-is-complete\n";
 	close OUTS;
-	$allJobs[$splitA] = join(" ",$OPT{'N'},$OPT{'TD'},$OPT{'B'});
+	$allJobs[$job_seq] = join(" ",$OPT{'N'},$OPT{'TD'},$OPT{'B'});
 }
 close IS;
 
 # MAIN: qsub & wait
 my $sleep = 0;
 chomp(my $user = `whoami`);
-my $sub_num = $maxJob > $splitA ? $splitA : $maxJob;
+#my $sub_num = $maxJob > $job_seq ? $job_seq : $maxJob;
 
-@wait = (1..$splitA);
+
+### MAIN START #################################################################
+@wait = (1..$job_seq);
+my $Job_Num = 0;
 while(@wait){
-	$_ = shift @wait;
-	&qsub_and_bak($_);
+  while($Job_Num <= $maxJob && @wait ){  # Make sure the queue jobs is less than Max-job-allowed
+    $_ = shift @wait;
+    &qsub_and_bak($_);
+  }
+  while(keys %runJob){
+		my %MissRun = %runJob;
+    &check_job($user,\%error,\@wait,\%runJob,\%MissRun);
+    last if ($Job_Num <= $maxJob && @wait); # Fill in the queue line
+    $sleep ++ if $sleep < $sleepT;
+    sleep($sleep);
+  }
+  open LOG,">>$shell.log" or die "can't open $shell.log\n";
+  if(keys %error){
+    print LOG "There are some job can't finish, you may check the shell and qsub again\n";
+    for(sort {$a cmp $b} keys %error){
+      print LOG "$_\n";
+    }
+  }else{
+    print LOG "All jobs are finished correctly\n";
+  }
+  close LOG;
 }
-while(keys %runJob){
-	&check_job($user,\%error,\@wait,\%runJob);
-	$sleep ++ if $sleep < $sleepT;
-	sleep($sleep);
-}
-
-open LOG,">>$shell.log" or die "can\'t open $shell.log\n";
-if(keys %error){
-	print LOG "There are some job can't run finish, check the shell and qsub again\n";
-	for(sort {$a cmp $b} keys %error){
-		print LOG "$_\n";
-	}
-}else{
-	print LOG "All jobs are finished correctly\n";
-}
-close LOG;
 exit;
-# END
+### MAIN END ###################################################################
 #
 # SUB FUNCTION
 sub qsub_and_bak{
 	my $index = shift;
 	($OPT{'N'},$OPT{'TD'},$OPT{'B'}) = split(" ",$allJobs[$index]);
-	my $JBname = "$OPT{N}\_$OPT{'TD'}\_$index";
+	my $JBname = "$OPT{N}\_$OPT{'TD'}\_".sprintf("%05d",$index);
 	$qsub_opt = $JBs{$OPT{'N'}}{$OPT{'TD'}}{$index}{'opt'};
-    my $JBtag = "$OPT{N}\_$OPT{'TD'}\_0";
+  my $JBtag = "$OPT{N}\_$OPT{'TD'}\_0";
 	my $cmd = "$qsub_opt -o $qsubDir/$JBname.sh.o -e $qsubDir/$JBname.sh.e -N $JBname $qsubDir/$JBname.sh\n";
 	print $cmd;
 	my $qmess;
 	while($qmess = `$cmd`){
 		chomp($qmess);
-		next unless $qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/;
-
-		my $jbID = $1;
-        chomp($logTime = `date +%F" "%R`);
-		print DEBUG "$logTime\t$jbID\t$JBname\tmain submit";
-		for(my $j=0;$j<$OPT{'TD'};$j++){
-			if(exists $UNDONE{$OPT{'N'}}{$j}{'num'}){
-				`qhold $jbID`;
-				print DEBUG " & HOLD";
-				last;
-			}
-		}
-		print DEBUG "\n";
-        $runJob{$jbID} = $JBname;
-        $UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'num'} ++;
-		$UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'jbID'} .= "$jbID ";
-		# Backup
-		my $BakN = 1;
-		while($BakN<=$OPT{'B'}){
-            $JBtag = "$OPT{N}\_$OPT{'TD'}\_".$BakN;
-            $cmd="$qsub_opt -o $qsubDir/$JBname.$BakN.o -e $qsubDir/$JBname.$BakN.e -N $JBname $qsubDir/$JBname.sh\n";
-			chomp(my $qmess = `$cmd`);
-			if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
-				`qhold $1`;
-				$BAK{$JBname}{$1} = $cmd;
-                 chomp($logTime = `date +%F" "%R`);
-				print DEBUG "$logTime\t$1\t$JBname\tBACKUP $BakN & HOLD\n";
-				$BakN ++ ;
-			}
-		}
-		last;
+		if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
+			$Job_Num ++; #Global control
+  		my $jbID = $1;
+      chomp($logTime = `date +%F" "%R`);
+  		print DEBUG "$logTime\t$JBname\t$jbID\tTask submitted";
+  		for(my $j=0;$j<$OPT{'TD'};$j++){
+  			if(exists $UNDONE{$OPT{'N'}}{$j}{'num'}){
+  				`qhold $jbID`;
+  				print DEBUG " & HOLD";
+  				last;
+  			}
+  		}
+  		print DEBUG "\n";
+      $runJob{$jbID} = $JBname;
+      $UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'num'} ++;
+  		$UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'jbID'} .= "$jbID ";
+  		# Backup loop
+  		my $BakN = 0;
+			$BAK{$JBname}{'cmd'} = $cmd;
+			my $maxBak = ($OPT{'B'}<=$maxTry)?$OPT{'B'}:$maxTry;
+  		while($BakN < $maxBak){
+				chomp(my $qmess = `$cmd`);
+  			if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
+  				`qhold $1`;
+  				push @{$BAK{$JBname}{'ID'}}, $1;
+          chomp($logTime = `date +%F" "%R`);
+  				print DEBUG "$logTime\t$JBname\t$1\tBACKUP $BakN & HOLD\n";
+  				$BakN ++ ;
+					$Job_Num ++; #Global control
+  			}else{
+					print DEBUG "$logTime\t$JBname\t$1\tBACKUP broke off.\n";
+					last;
+				}
+  		}
+    }else{
+        `echo $JBname.sh has not submitted! >>$shell.log`;
+    }
+   	last;
 	}
 }
 
+sub failed_job_reRun{
+	my ($jbID, $jbname,$error,$run) = @_;
+	delete $$run{$jbID}; # clean up failed job ID
+	if($$error{$jbname} <= $maxTry){ # Check if this job got a holded backup:
+		#prepare for re-try
+		`qdel $jbID`;
+		`echo "=== Re-try ===" >> $qsubDir/$jbname.sh.o`;
+		`echo "=== Re-try ===" >> $qsubDir/$jbname.sh.e`;
+		chomp($logTime = `date +%F" "%R`);
+
+		if(exists $BAK{$jbname}{'ID'}){
+			#my $bakJob = (sort {$a <=> $b} keys %{$BAK{$jbname}{'ID'}})[0];
+			my $bakJob = shift @{$BAK{$jbname}{'ID'}};
+			`qrls $bakJob`;
+			print DEBUG "$logTime\t$jbname\t$bakJob\tRelease.(qdel $jbID)\n";
+			# Replace running job ID with backup ID
+			$$run{$bakJob} = $jbname;
+			# Re-bak
+			if($$error{$jbname} + @{$BAK{$jbname}{'ID'}} < $maxTry){
+				chomp(my $qmess = `$BAK{$jbname}{'cmd'}`);
+				if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
+					`qhold $1`;
+					push @{$BAK{$jbname}{'ID'}}, $1;
+					`echo $jbname.sh backup submitted! >> $shell.log`;
+					print DEBUG "$logTime\t$jbname\t$1\tRE-BACKUP & HOLD\n";
+					$Job_Num ++;
+				}else{
+					`echo $bakJob backup $jbname.sh broke off! >> $shell.log`;
+				}
+			}
+		}else{			# If backup is unable, then re-qsub it:
+			chomp(my $qmess = `$BAK{$jbname}{'cmd'}`);
+			if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
+				$Job_Num ++;
+				my $jbID = $1;
+				print DEBUG "$logTime\t$jbname\t$jbID\tTask re-submitted";
+				for(my $j=0;$j<$OPT{'TD'};$j++){
+					if(exists $UNDONE{$OPT{'N'}}{$j}{'num'}){
+						`qhold $jbID`;
+						print DEBUG " & HOLD";
+						last;
+					}
+				}
+				print DEBUG "\n";
+				$Job_Num ++;
+				$runJob{$jbID} = $jbname;
+			}
+		}
+	}else{ # When exceed max-try times
+		print DEBUG "$logTime\t$jbname\t$jbID\tExceed max-try($maxTry). Task abandoned.\n";
+		$jbname =~ /^(\S+)\_(\d+)\_(\d+)$/;
+		$UNDONE{$1}{$2}{'num'} = "Exceed";
+	}
+	$sleep=0;
+}
+
 sub check_job{
-	my($userName,$error,$wait,$run) = @_;
-    # No longer needed dead node check.
-#	my %dead;
-#	&dead_nodes(\%dead);
+	my($userName,$error,$wait,$run,$miss_Run) = @_;
 	#check running job
 	my %running;
-    #my $qsub_stat = `qstat -xml -u $userName`;
-    my $qsub_stat = &get_log($userName,$sleep);
+  my $qsub_stat = &get_log($userName,$sleep);
+
+  ## Check jobs' status on qstat list
 	while($qsub_stat =~ /<JB_job_number>(\d+?)<\/JB_job_number>.*?
 		<JB_name>(.+?)<\/JB_name>.*?
 		<state>(.+?)<\/state>.*?
 		<queue_name>(.*?)<\/queue_name>
 		/gxs){
 		my ($jbID, $jbname, $jbstat, $jbqueue) = ($1, $2, $3, $4);
-		$running{$jbID} = $jbname if exists $$run{$jbID};
-		if(exists $$run{$jbID} and $jbstat ne "hqw"){
-			if ($jbstat eq 'r'){
+    ## Store job info on qstat list:
+		if(exists $$run{$jbID}){
+			$running{$jbID} = $jbname if exists $$run{$jbID}; # Replaced by next line
+			delete $$miss_Run{$jbID};
+		}
+		chomp($logTime = `date +%F" "%R`);
+		if(exists $$run{$jbID}){
+      ## For jobs on qstat list, responding based on their status:
+      if ($jbstat eq "hqw"){
+				# To those jobs failed in front steps, we better cancel their following tasks.
+				$jbname =~ /^(\S+)\_(\d+)\_(\d+)$/;
+				my($pfx,$td,$seq)=($1,$2,$3);
+				if($UNDONE{$pfx}{$td-1}{'num'} eq "Exceed"){
+					print DEBUG "$logTime\t$jbname\t$jbID\tCanceled as its front steps failed.\n";
+					`qdel $jbID`;
+					delete $$run{$jbID};
+					&removeBak($jbname,"canceled");
+					$UNDONE{$pfx}{$td}{'num'} = "Exceed";
+				}
+      }elsif($jbstat eq 'r'){
 				unless(defined $NODE{$jbID}){
 					$NODE{$jbID} = $jbqueue;
-                   chomp($logTime = `date +%F" "%R`);
-					print DEBUG "$logTime\t$jbID\t$jbname\t$NODE{$jbID}\n";
+					print DEBUG "$logTime\t$jbname\t$jbID\trunning at $jbqueue\n";
 				}
 			}elsif($jbstat eq "Eqw"){
 				my $eqwNode = (defined $NODE{$jbID})?$NODE{$jbID}:"unknownNode";
@@ -193,48 +275,28 @@ sub check_job{
 				print EQW "Eqw obtained! $jbID : $eqwNode : $1 \n";
 				`qmod -c $jbID`;
 				$sleep=0;
-			}elsif($jbstat eq "T" ){ #or ($jbqueue =~ /^.+@(.+)\.local$/ and exists $dead{$1})){
+			}elsif($jbstat eq "T" ){
+				$Job_Num --;
 				$$error{$jbname}++;
 				delete $$run{$jbID};
-				`echo $jbID: $jbname.sh has not finished! >>$shell.error`;
-
-				if($$error{$jbname} <= $maxTry){
-                    my $bakJob = (sort {$a <=> $b} keys %{$BAK{$jbname}})[0];
-                    last if $bakJob eq "";
-                    `qdel $jbID`;
-					`cat /dev/null > $qsubDir/$jbname.sh.o`;
-					`cat /dev/null > $qsubDir/$jbname.sh.e`;
-					`qrls $bakJob`;
-					$$run{$bakJob} = $jbname;
-                    delete $BAK{$jbname}{$bakJob};
-					# Re-bak
-                    if($$error{$jbname} <$maxTry){
-    					chomp(my $qmess = `$BAK{$jbname}{$bakJob}`);
-	    				if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
-		    				`qhold $1`;
-			    			$BAK{$jbname}{$1} = $BAK{$jbname}{$bakJob};
-				    	}
-					    `echo $bakJob backup $jbname.sh go! >>$shell.error`;
-					    $running{$bakJob} = $jbname;
-                    }
-				}
-				$sleep=0;
-				delete $running{$jbID};
+				`echo $jbname.sh did not finished! >>$shell.log`;
+                ## Check if this job allowed re-run:
+				&failed_job_reRun($jbID, $jbname,$error,$run);
 			}
 		}
 	}
 	# check un-running job
-	foreach my $id (sort {$a <=> $b} keys %$run){
+	foreach my $id (sort {$a <=> $b} keys %$miss_Run){
 		my $jbname = $$run{$id};
-        #($OPT{'N'},$OPT{'TD'},$OPT{'sA'}) = split('|',$jbTag);
-        $jbname =~ /^(\S+)\_(\d+)\_(\d+)$/;
-        ($OPT{'N'},$OPT{'TD'},$OPT{'sA'}) = ($1,$2,$3);
-		if(!exists $running{$id}){
+    $jbname =~ /^(\S+)\_(\d+)\_(\d+)$/;
+    ($OPT{'N'},$OPT{'TD'},$OPT{'sA'}) = ($1,$2,$3);
+		if(!exists $running{$id}){ # Loop no longer needed
+			$Job_Num --; #Global control
 			chomp(my $log = `tail -1 $qsubDir/$jbname.sh.o`);
 			if($log eq "this-work-is-complete"){
 				delete($$error{$jbname});
 				delete $$run{$id};
-				`echo $jbname.sh is finished! >> $shell.finished`;
+				`echo $jbname.sh is finished! >> $shell.log`;
 				$UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'num'} -- ;
 				if($UNDONE{$OPT{'N'}}{$OPT{'TD'}}{'num'}==0){
 					my $nextTD = $OPT{'TD'} + 1;
@@ -243,65 +305,37 @@ sub check_job{
 						while(@nextJobs){
 							$_ = shift @nextJobs;
 							`qrls $_`;
-                           chomp($logTime = `date +%F" "%R`);
-                            print DEBUG "$logTime\t$jbname finish and $_\t$$run{$_} release!\n";
+              chomp($logTime = `date +%F" "%R`);
+              print DEBUG "$logTime\t$$run{$_}\t$_\tRelease (previous step complete)\n";
 						}
 						$sleep=0;
 					}
 				}
 				# delete backup
-
-				foreach my $jb (sort keys %{$BAK{$jbname}}){
-					`qdel $jb`;
-					delete $BAK{$jbname}{$jb};
-                    print DEBUG "$logTime\t Backup $jbname: $jb delete!\n"
-				}
+				&removeBak($jbname,"completed");
 			}else{
-				`echo $jbname has not finished! >>$shell.error`;
+				`echo $jbname.sh did not finished! >>$shell.log`;
 				my $node = ($NODE{$id})?$NODE{$id}:"unknown_node";
 				chomp(my $elog = `tail -1 $qsubDir/$jbname.sh.e`);
-				print EQW "$id:$jbname failed at $node with message:$elog\n";
+				print DEBUG "$logTime\t$jbname\t$id\tErr at $node : $elog\n";
 				$$error{$jbname}++;
-				if($$error{$jbname} <= $maxTry){
-					`cat /dev/null > $qsubDir/$jbname.sh.o`;
-					`cat /dev/null > $qsubDir/$jbname.sh.e`;
-					my $bakJob = (sort {$a <=> $b} keys %{$BAK{$jbname}})[0];
-					`qrls $bakJob`;
-					$$run{$bakJob} = $jbname;
-					delete $BAK{$jbname}{$bakJob};
-                    print DEBUG "$logTime\t$jbname failed and backup $bakJob release!\n";
-                    `echo $bakJob backup($$error{$jbname}) $jbname.sh go! >>$shell.error`;
-                    # Re-bak
-                    if($$error{$jbname} <$maxTry){
-    					chomp(my $qmess = `$BAK{$jbname}{$bakJob}`);
-    					if($qmess =~ /^[Yy]our\sjob\s(\d+)\s\(\".*\"\)\shas\sbeen\ssubmitted.?$/){
-    						`qhold $1`;
-    						$BAK{$jbname}{$1} = $BAK{$jbname}{$bakJob};
-                            print DEBUG "$logTime\t$jbname re-bak $bakJob submitted!\n";
-    					}
-	    				`echo $bakJob backup($$error{$jbname}) $jbname.sh submited and hold! >>$shell.error`;
-	    				$running{$bakJob} = $jbname;
-                    }
-				}else{
-                     delete $$run{$id};
-                     print DEBUG "$logTime\t$jbname reach retry maximum and then were dropped.\n";
-                }
-				$sleep=0;
+				&failed_job_reRun($id,$jbname,$error,$run);
 			}
 		}
 	}
 }
 
-sub dead_nodes{
-	my $dead = shift;
-	chomp(my @nodeMess = `qhost`);
-	shift @nodeMess for(1..3);
-	foreach(@nodeMess){
-		my @temp = split;
-		my $node_name = $temp[0];
-		$dead->{$node_name} = undef if($temp[3]=~/-/ || $temp[5]=~/-/ || $temp[7]=~/-/ || $temp[4]=~/-/ || $temp[6]=~/-/);
+sub removeBak {
+	my($jbname,$info) = @_;
+	while(@{$BAK{$jbname}{'ID'}}){
+	#foreach my $jb (sort keys %{$BAK{$jbname}{'ID'}}){
+		my $jb = shift @{$BAK{$jbname}{'ID'}};
+		`qdel $jb`;
+		$Job_Num --; #Global control
+		print DEBUG "$logTime\t$jbname\t$jb\tBackup deleted since job ".$info.".\n"
 	}
 }
+
 
 sub get_log{
     my $usr = shift; # User name
@@ -321,10 +355,12 @@ sub get_log{
 
 sub usage{
 	print <<EOD;
-Desc: A new program which could submit backup jobs to queue in advancd,
-	  hang on following jobs first, and check to reqsub abnormal jobs.
-	  Each Option could independently set in front of each sub-command 
-	  with equal sign and space to identify.
+Desc: A new program which could:
+	- submit backup jobs to queue in advancd,
+	- hang on jobs of follow-up steps and release them when current step completed,
+	- Log and reqsub abnormal jobs.
+	Each Option could independently set in front of each sub-command
+	with equal sign and space to identify.
 usage: perl $0 [options] shell_script
         -d  qsub script and log dir, default ./shell.sh_qsub/
 		-N  set the prefix tag for qsubed jobs, default work
@@ -332,11 +368,11 @@ usage: perl $0 [options] shell_script
 		-P  project_name, default not
 		-f  numeric with unit , e.g: xxG/xxM/xxm. Default is '1G'.
 		-p  numeric, default is '1'.
-		-b  set number of lines to form a job
+		-b  set number of lines to form a job, default 1
 		-B  Backup job number, default 0
-		-m set the maximum number of jobs to throw out, unlimited in this version
-		-s  set interval time of checking by qstat, default 120 seconds
-		-r  mark to reqsub the job which was finished error,--max reqsub 10 times--, default not
+		-m  set the maximum number of jobs to throw out, default 500
+		-s  set interval time of checking by qstat, default 300 seconds
+		-r  Times to reqsub the abnormal jobs, default 0
 		-h  show this help
 EOD
 }
