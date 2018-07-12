@@ -70,6 +70,8 @@ print &usage && exit if ( (!defined $path_f)||(defined $help) );
 # ####################
 $step    ||= "1234";
 $out_dir ||= $cwd; $out_dir = abs_path($out_dir);
+my $monitor_tag = basename($out_dir);
+$monitor_tag =~ s/[_.-]/_/g;
 $ins_f ||= "SE";
 
 if (defined $config){
@@ -154,7 +156,10 @@ close C1;
 open M1,">$out_dir/RUN.qsubM.sh";
 print M1 "$cmd qsubM -d $dir_s/QSUBM.matrix_qsub -P $CFG{'P'} -q $CFG{'q'} -r $CFG{'r'} -s $CFG{'s'} $dir_s/QSUBM.matrix";
 close M1;
+open PYM,">$out_dir/RUN.monitor.sh";
+print PYM "monitor taskmonitor -q $CFG{'q'} -P $CFG{'P'} -p $monitor_tag -i $dir_s/pymonitor.list -f 3 -s 'done'\n";
 open QSUBM,"> $dir_s/QSUBM.matrix";
+open MONIT,"> $dir_s/pymonitor.list";
 open C2,">$out_dir/RUN.linear.$step.sh";
 open B1,">$dir_s/batch.clean.sh";
 open B2,">$dir_s/batch.rmhost.sh";
@@ -165,7 +170,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	### Write main batch scripts first.
 	print C2 "sh $dir_sS/$sam.$step.sh \&\n";
 	open LINE,"> $dir_sS/$sam.$step.sh";
-	if ($step =~ /1/){ 
+	if ($step =~ /1/){
 		open SSC,">$dir_sS/$sam.clean.sh";
         $CFG{'p1'} ||= $CFG{'p'};
 		if($CFG{'qsub'} =~ /on|1/){
@@ -174,7 +179,7 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 		}else{
 			print LINE "sh $dir_sS/$sam.clean.sh\n";
 		}
-	}                              
+	}
 	if ($step =~ /2/){
 		open SSR,">$dir_sS/$sam.rmhost.sh";
         $CFG{'p2'} ||= $CFG{'p'};
@@ -184,8 +189,8 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 		}else{
 			print LINE "sh $dir_sS/$sam.rmhost.sh\n";
 		}
-	}                              
-	if ($step =~ /3/){             
+	}
+	if ($step =~ /3/){
 		open SSS,">$dir_sS/$sam.soap.sh";
 		open LIST,">$dir_sp/$sam.soap.list";
         $CFG{'p3'} ||= $CFG{'p'};
@@ -202,16 +207,18 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			$CFG{'f4'} ||= $CFG{'f'};
 			print LINE &qsub($CFG{'f4'}, $CFG{'p4'}, $CFG{'q'}, $CFG{'P'}, "$dir_sS/$sam.abun.sh");
 		}else{
-	        print LINE "sh $dir_sS/$sam.abun.sh\n"; 
-		} 
+	        print LINE "sh $dir_sS/$sam.abun.sh\n";
+		}
 		print B4 "sh $dir_sS/$sam.abun.sh\n";
 	}
-	close LINE;                    
+	close LINE;
 
-	my $list ="";
+	my $list = "";
+	my @soap_cmd = ();
 	my @FQS = sort keys %{$SAM{$sam}};
 	foreach my $pfx(sort keys %{$SAM{$sam}}){
 		my @fs = @{$SAM{$sam}{$pfx}};
+        my $pre_cmd = "";
 		our($fq1,$fq2,$fqS)=();;
 		$fq1 = $fs[0];
 		$tmp_out = $fq1;
@@ -229,15 +236,17 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 			if (@fs eq 2 ){
 				$seq = "$fq1,$fq2";
 				@fs = ("$dir_c/$pfx.clean.1.fq.gz","$dir_c/$pfx.clean.2.fq.gz","$dir_c/$pfx.clean.single.fq.gz");
-				print SIC "$cmd $s_PEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'}\n";
+				print SIC "$cmd $s_PEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'} && echo done\n";
 			}else{
 				$seq = $fq1;
 				$tmp_out = "$dir_c/$pfx.clean.fq.gz";
-				print SIC "$cmd $s_SEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'}\n";
+				print SIC "$cmd $s_SEclean $seq $dir_c/$pfx $CFG{'PhQ'} $CFG{'mLen'} $CFG{'seedOA'} $CFG{'fragOA'} && echo done\n";
 			}
 			print B1 "sh $dir_sI/$pfx.clean.sh\n";
 			print SSC "sh $dir_sI/$pfx.clean.sh\n";
 			print QSUBM &qsubM($sam, 1, "sh $dir_sI/$pfx.clean.sh");
+			$pre_cmd = &moni("",1,"$dir_sI/$pfx.clean.sh");
+			print MONIT $pre_cmd;
 			close SIC;
 		}
 ###############################
@@ -251,10 +260,16 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-a $tmp_out";
 				$tmp_out = "$dir_r/$pfx.rmhost.fq.gz";
 			}
-			print SIR "$cmd $s_rm $seq -d $CFG{'db_host'} -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'p2'} -f Y -q 1 -p $dir_r/$pfx\n";
+			print SIR "$cmd $s_rm $seq -d $CFG{'db_host'} -D 4 -s 30 -r 1 -m $CFG{'min'} -x $CFG{'max'} -v 7 -i 0.9 -t $CFG{'p2'} -f Y -q 1 -p $dir_r/$pfx && echo done\n";
 			print B2 "sh $dir_sI/$pfx.rmhost.sh\n";
 			print SSR "sh $dir_sI/$pfx.rmhost.sh\n";
 			print QSUBM &qsubM($sam, 2, "sh $dir_sI/$pfx.rmhost.sh");
+			if($step =~ /^2/){
+				print MONIT &moni("",2,"$dir_sI/$pfx.rmhost.sh");
+			}else{
+				print MONIT &moni($pre_cmd,2,"$dir_sI/$pfx.rmhost.sh");
+			}
+			$pre_cmd = &moni("",2,"$dir_sI/$pfx.rmhost.sh");
 			close SIR;
 		}
 ###############################
@@ -271,10 +286,17 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 				$seq = "-i1 $tmp_out";
 				$list .="$dir_sp/$sam.gene.build/$pfx.soap.SE.se.gz\n";
 			}
-			print SIS "$cmd $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx &> $dir_sp/$sam.log\n";
+			print SIS "$cmd $s_soap $seq -DB $CFG{'db_meta'} -par $par -o $dir_sp -s $sam -p $pfx &> $dir_sp/$sam.log && echo done\n";
 			print B3 "sh $dir_sI/$pfx.soap.sh\n";
 			print SSS "sh $dir_sI/$pfx.soap.sh\n";
 			print QSUBM &qsubM($sam, 3, "sh $dir_sI/$pfx.soap.sh");
+			if($step =~ /^3/){
+				print MONIT &moni("",3,"$dir_sI/$pfx.soap.sh");
+			}else{
+				print MONIT &moni($pre_cmd,3,"$dir_sI/$pfx.soap.sh");
+			}
+			$pre_cmd = &moni("",3,"$dir_sI/$pfx.soap.sh");
+			push @soap_cmd, $pre_cmd;
 			close SIS;
 		}
 	}
@@ -286,7 +308,15 @@ foreach my $sam (sort keys %SAM){ # operation on sample level
 	if ($step =~ /4/){ # Since step4 contains abundance building which needs operated on sample level, I've got to put them here.
 		open ABUN,">$dir_sS/$sam.abun.sh";
 		print QSUBM &qsubM($sam, 4, "sh $dir_sS/$sam.abun.sh");
-		print ABUN "$cmd $s_abun $CFG{'RGL'} $ins_f $dir_sp/$sam.soap.list $dir_sp/$sam\n";
+		if($step =~ /^4/){
+			print MONIT &moni("",4,"$dir_sS/$sam.abun.sh");
+		}else{
+			while(@soap_cmd >0){
+				my $pre_cmd = shift @soap_cmd;
+				print MONIT &moni($pre_cmd,4,"$dir_sS/$sam.abun.sh");
+			}
+		}
+		print ABUN "$cmd $s_abun $CFG{'RGL'} $ins_f $dir_sp/$sam.soap.list $dir_sp/$sam && echo done\n";
 		close ABUN;
 	}
 }
@@ -296,6 +326,7 @@ close B3;
 close B4;
 print C2 "wait\n"; close C2;
 close QSUBM;
+close MONIT;
 ## done! <- contents of each batch scripts
 open STAT,">$out_dir/report.stat.sh";
 print STAT "$cmd report.stat.pl sam.id.path ./ $step > REPORT.txt\n";
@@ -326,4 +357,16 @@ sub qsubM {
 	my $vf= ($CFG{"f$s"})?$CFG{"f$s"}:$CFG{"f"};
 	my $p = ($CFG{"p$s"})?$CFG{"p$s"}:$CFG{"p"};
 	return("N=$N TD=$s B=$B f=$vf p=$p $sh\n")
+}
+
+sub moni {
+    my($pcmd,$s,$sh) = @_;
+    my $vf= ($CFG{"f$s"})?$CFG{"f$s"}:$CFG{"f"};
+    my $p = ($CFG{"p$s"})?$CFG{"p$s"}:$CFG{"p"};
+    if($pcmd eq ""){
+        return("$sh:$vf:$p"."cpu\n")
+    }else{
+		chomp($pcmd);
+        return("$pcmd $sh:$vf:$p"."cpu\n")
+    }
 }

@@ -4,7 +4,7 @@ t02.sth	ERR260133	./fastq/ERR260133_1.fastq.gz
 t02.sth	ERR260133	./fastq/ERR260133_2.fastq.gz
 t03_rep	ERR260134	./fastq/ERR260134_1.fastq.gz
 t03_rep	ERR260134	./fastq/ERR260134_2.fastq.gz
-t04_rep_2	ERR260135	./fastq/ERR260135_1.fastq.gz
-t04_rep_2	ERR260135	./fastq/ERR260135_2.fastq.gz
-t05	ERR260136	./fastq/ERR260136_1.fastq.gz
-t05 ERR260136	./fastq/ERR260136_2.fastq.gz
+t03_rep	ERR260135	./fastq/ERR260135_1.fastq.gz
+t03_rep	ERR260135	./fastq/ERR260135_2.fastq.gz
+t04	ERR260136	./fastq/ERR260136_1.fastq.gz
+t04 ERR260136	./fastq/ERR260136_2.fastq.gz
