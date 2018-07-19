@@ -74,7 +74,7 @@ while(<IS>){
 #  $JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'sh'}  = $cmd;
 
   my $JBname = "$OPT{N}\_$OPT{'TD'}\_".sprintf("%05d",$job_seq);
-	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'opt'} = "qsub -cwd -S /bin/bash -l vf=$OPT{'f'},p=$OPT{'p'} ";
+	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'opt'} = "qsub -cwd -S /bin/bash -l vf=$OPT{'f'},p=$OPT{'p'} -binding linear:$OPT{'p'} ";
 	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'opt'}.= "-q $OPT{'q'} -P $OPT{'P'} ";
 
 	open  OUTS,">$qsubDir/$JBname.sh" or die "can\'t open split shell: $qsubDir/$JBname.sh\n";
