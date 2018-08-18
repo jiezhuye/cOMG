@@ -1,5 +1,5 @@
-t01.sth ERR260132	./fastq/ERR260132_1.fastq.fake.gz
-t01.sth	ERR260132	./fastq/ERR260132_2.fastq.fake.gz
+t01.sth ERR260132	./fastq/ERR260132_1.fastq.gz
+t01.sth ERR260132	./fastq/ERR260132_2.fastq.gz
 t02.sth ERR260133	./fastq/ERR260133_1.fastq.gz
 t02.sth ERR260133	./fastq/ERR260133_2.fastq.gz
 t03_rep ERR260134	./fastq/ERR260134_1.fastq.gz
