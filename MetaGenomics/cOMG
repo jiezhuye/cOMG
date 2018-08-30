@@ -337,8 +337,8 @@ exit;
 # ####################
 sub version {
 	print <<VERSION;
-    version:    v0.3
-    update:     20160111-20171024
+    version:    v0.5
+    update:     20160111-20180830
     author:     fangchao\@genomics.cn
 VERSION
 };
