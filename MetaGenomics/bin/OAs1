@@ -1,7 +1,7 @@
 #!/usr/bin/perl -w
 use warnings;
 use strict;
-use File::Basename; 
+use File::Basename;
 
 die &usage if @ARGV < 6;
 sub usage {
@@ -11,10 +11,11 @@ se pattern:
 	perl $0 fq1 <prefix> <Qual system(33|64)> <min length> <seed OA> <fragment OA>
 e.g	perl $0 sample.fq clean 33 30 0.99 0.90
 	perl $0 sample.1.fq,sample.2.fq clean 33 30 0.99 0.90
+	perl $0 sample.1.fq,sample.2.fq clean 33 30 20 10 # PhedQ(by whole read)
 USAGE
 	exit;
 }
-sub openMethod {shift;return(($_=~/\.gz$/)?"gzip -dc $_|":"$_")}
+sub openMethod {$_ = shift; return(($_ =~ /\.gz$/)?"pigz -dc $_|":"$_")}
 ### Load accuracy table ###
 my %P2A;
 $P2A{0}= -10;
@@ -22,21 +23,26 @@ for (my $p=1;$p<=50;$p++){
     $P2A{$p} = log(1-10**(-$p/10))/log(10);
 }
 
-### BODY ###
+### Init ###
 my ($fq,$pfx,$Qsys,$minLen,$Scut,$Qcut) = @ARGV;
 $Qsys ||= 33;
 my @fqs = split /,/,$fq;
 my $mode= (@fqs==2)?"PE":"SE";
 
+### Trasnform cutoff ###
+$Scut = ($Scut <= 1)?(log($Scut)/log(10)):($P2A{$Scut});
+$Qcut = ($Qcut <= 1)?(log($Qcut)/log(10)):($P2A{$Qcut});
+
+### Main ###
 if($mode eq "PE"){
-	open F1,"gzip -dc $fqs[0] |" or die "Input 1 error:$!\n";
-	open O1,"|gzip >$pfx.clean.1.fq.gz" or die "Output 1 error:$!\n";
-	open F2,"gzip -dc $fqs[1] |" or die "Input 2 error:$!\n";
-	open O2,"|gzip >$pfx.clean.2.fq.gz" or die "Output 2 error:$!\n";
-	open O3,"|gzip >$pfx.clean.single.fq.gz" or die "Output 3 error:$!\n";
+	open F1, &openMethod($fqs[0]) or die "Input 1 error:$!\n";
+	open O1,"|pigz >$pfx.clean.1.fq.gz" or die "Output 1 error:$!\n";
+	open F2,&openMethod($fqs[1]) or die "Input 2 error:$!\n";
+	open O2,"|pigz >$pfx.clean.2.fq.gz" or die "Output 2 error:$!\n";
+	open O3,"|pigz >$pfx.clean.single.fq.gz" or die "Output 3 error:$!\n";
 }else{
-	open F1,"gzip -dc $fqs[0] |",or die "Input 1 error:$!\n";
-	open O1,"|gzip >$pfx.clean.fq.gz" or die "Output 1 error:$!\n";
+	open F1,&openMethod($fqs[0]) or die "Input 1 error:$!\n";
+	open O1,"|pigz >$pfx.clean.fq.gz" or die "Output 1 error:$!\n";
 }
 open STAT,"> $pfx.clean.stat_out",or die "Open log file error:$!\n";
 
@@ -60,7 +66,7 @@ while(<F1>){
 		($fqID[1],$seq[1],$num[1],$qual[1])= &fqRead($l2,\*F2);
 	}
 	$total ++;
-	
+
 	# trim & filter
 	if($mode eq "PE"){
 		($Aqual[0],$PQ[0],$start[0],$len[0],$seq[0],$qual[0]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[0],$qual[0]);
@@ -120,16 +126,19 @@ my $tag = basename($pfx);
 print STAT "Total\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\tremain\trate\n";
 print STAT "$total\t$max_bp\t$min_bp\t$avgL\t$avgS\t$avgOA\t$avgQ\t$remainQ\t$rate\n";
 if($mode eq "PE"){
-	
+
 	print STAT "Read_1\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\n";
 	printf STAT ("%d\t%d\t%d\t%d\t%d\t%.4f\t%.0f\n",
-		$remainQ[0],$max_bp[0],$min_bp[0],$sum_bp[0]/$remainQ[0],$sum_s[0]/$remainQ[0],$sum_oa[0]/$remainQ[0],$sum_Q[0]/$remainQ[0]);
+		(defined $remainQ[0])?($remainQ[0],$max_bp[0],$min_bp[0],$sum_bp[0]/$remainQ[0],
+		$sum_s[0]/$remainQ[0],$sum_oa[0]/$remainQ[0],$sum_Q[0]/$remainQ[0]):(0,0,0,0,0,0,0));
 	print STAT "Read_2\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\n";
 	printf STAT ("%d\t%d\t%d\t%d\t%d\t%.4f\t%.0f\n",
-		$remainQ[1],$max_bp[1],$min_bp[1],$sum_bp[1]/$remainQ[1],$sum_s[1]/$remainQ[1],$sum_oa[1]/$remainQ[1],$sum_Q[1]/$remainQ[1]);
+		(defined $remainQ[1])?($remainQ[1],$max_bp[1],$min_bp[1],$sum_bp[1]/$remainQ[1],
+		$sum_s[1]/$remainQ[1],$sum_oa[1]/$remainQ[1],$sum_Q[1]/$remainQ[1]):(0,0,0,0,0,0,0));
 	print STAT "Single\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\n";
 	printf STAT ("%d\t%d\t%d\t%d\t%d\t%.4f\t%.0f\n",
-		$remainQ[2],$max_bp[2],$min_bp[2],$sum_bp[2]/$remainQ[2],$sum_s[2]/$remainQ[2],$sum_oa[2]/$remainQ[2],$sum_Q[2]/$remainQ[2]);
+		(defined $remainQ[2])?($remainQ[2],$max_bp[2],$min_bp[2],$sum_bp[2]/$remainQ[2],
+		$sum_s[2]/$remainQ[2],$sum_oa[2]/$remainQ[2],$sum_Q[2]/$remainQ[2]):(0,0,0,0,0,0,0));
 }
 print STAT "length\tcount\n";
 foreach my $l(sort {$a<=>$b} keys %STAT){
@@ -154,7 +163,7 @@ sub ca1_cut {
     my $sysQ = shift;
 	my $seq = shift;
     my $q = shift;
-    my ($ca, $tmp,$oa0, $oa1, $s,$p) = (1, 1, 1, 1, 0, 0);
+    my ($ca, $min,$oa0, $oa1, $s,$p) = (1, 0, 1, 1, 0, 0);
     my @Q;
 	my @PQ;
     # cal phrd Q
@@ -175,37 +184,32 @@ sub ca1_cut {
         $p ++;
     }
     # choose best seed
-    while($p<length($q)){
+    while($p<length($q) && $seedOA[$s]<$Sc){
         $seedOA[$p-29] = $seedOA[$p-30] + $Q[$p] - $Q[$p-30];
         $s = ($seedOA[$p-29] > $seedOA[$s])?$p-29:$s;
         $p++;
-        last if 10**$seedOA[$s]  >= $Sc;
     }
     # trim
 #    $ca = $seedOA[$s];
     $p = $s + 30;
     $ca = $seedOA[$s];
-    my $min = $Q[$p]; $p++;
     while($p<length($q)){
         my $acc = $Q[$p];
-#        $oa0 *= $acc;
         if($acc < $min){
             $oa1 = $ca + $min;
             $min = $acc;
         }else{
             $oa1 = $ca + $acc;
         }
-        last if 10**$oa1 < $cut;
+        last if $oa1 < $cut;
         $p ++;
         $ca = $oa1;
 
     }
-    $ca = 10**$ca; 
+    $ca = 10**$ca;
 	my $PQ =sprintf("%2d",-log(1-$ca)/log(10)*10);
-#	for(my $i=$s;$i<$p;$i++){
-#		$PQ += $PQ[$i];
-#	}
-	$p   = $p - $s;
+
+	$p   = $p - $s + 1;
 	$seq = substr($seq,$s,$p);
 	$q   = substr($q,$s,$p);
     return($ca,$PQ,$s,$p,$seq,$q);
@@ -223,6 +227,3 @@ sub cumulate {
 	$sum_oa[$n] += $Aqual[$m];
 	$sum_Q[$n] += $PQ[$m];
 }
-
-
-
