@@ -15,7 +15,7 @@ e.g	perl $0 sample.fq clean 33 30 0.99 0.90
 USAGE
 	exit;
 }
-sub openMethod {shift;return(($_=~/\.gz$/)?"gzip -dc $_|":"$_")}
+sub openMethod {$_ = shift; return(($_ =~ /\.gz$/)?"pigz -dc $_|":"$_")}
 ### Load accuracy table ###
 my %P2A;
 $P2A{0}= -10;
@@ -35,14 +35,14 @@ $Qcut = ($Qcut <= 1)?(log($Qcut)/log(10)):($P2A{$Qcut});
 
 ### Main ###
 if($mode eq "PE"){
-	open F1,"gzip -dc $fqs[0] |" or die "Input 1 error:$!\n";
-	open O1,"|gzip >$pfx.clean.1.fq.gz" or die "Output 1 error:$!\n";
-	open F2,"gzip -dc $fqs[1] |" or die "Input 2 error:$!\n";
-	open O2,"|gzip >$pfx.clean.2.fq.gz" or die "Output 2 error:$!\n";
-	open O3,"|gzip >$pfx.clean.single.fq.gz" or die "Output 3 error:$!\n";
+	open F1, &openMethod($fqs[0]) or die "Input 1 error:$!\n";
+	open O1,"|pigz >$pfx.clean.1.fq.gz" or die "Output 1 error:$!\n";
+	open F2,&openMethod($fqs[1]) or die "Input 2 error:$!\n";
+	open O2,"|pigz >$pfx.clean.2.fq.gz" or die "Output 2 error:$!\n";
+	open O3,"|pigz >$pfx.clean.single.fq.gz" or die "Output 3 error:$!\n";
 }else{
-	open F1,"gzip -dc $fqs[0] |",or die "Input 1 error:$!\n";
-	open O1,"|gzip >$pfx.clean.fq.gz" or die "Output 1 error:$!\n";
+	open F1,&openMethod($fqs[0]) or die "Input 1 error:$!\n";
+	open O1,"|pigz >$pfx.clean.fq.gz" or die "Output 1 error:$!\n";
 }
 open STAT,"> $pfx.clean.stat_out",or die "Open log file error:$!\n";
 
@@ -129,13 +129,16 @@ if($mode eq "PE"){
 
 	print STAT "Read_1\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\n";
 	printf STAT ("%d\t%d\t%d\t%d\t%d\t%.4f\t%.0f\n",
-		$remainQ[0],$max_bp[0],$min_bp[0],$sum_bp[0]/$remainQ[0],$sum_s[0]/$remainQ[0],$sum_oa[0]/$remainQ[0],$sum_Q[0]/$remainQ[0]);
+		(defined $remainQ[0])?($remainQ[0],$max_bp[0],$min_bp[0],$sum_bp[0]/$remainQ[0],
+		$sum_s[0]/$remainQ[0],$sum_oa[0]/$remainQ[0],$sum_Q[0]/$remainQ[0]):(0,0,0,0,0,0,0));
 	print STAT "Read_2\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\n";
 	printf STAT ("%d\t%d\t%d\t%d\t%d\t%.4f\t%.0f\n",
-		$remainQ[1],$max_bp[1],$min_bp[1],$sum_bp[1]/$remainQ[1],$sum_s[1]/$remainQ[1],$sum_oa[1]/$remainQ[1],$sum_Q[1]/$remainQ[1]);
+		(defined $remainQ[1])?($remainQ[1],$max_bp[1],$min_bp[1],$sum_bp[1]/$remainQ[1],
+		$sum_s[1]/$remainQ[1],$sum_oa[1]/$remainQ[1],$sum_Q[1]/$remainQ[1]):(0,0,0,0,0,0,0));
 	print STAT "Single\tmax\tmin\tavgLen\tavgStart\tavgOA\tavgQ\n";
 	printf STAT ("%d\t%d\t%d\t%d\t%d\t%.4f\t%.0f\n",
-		$remainQ[2],$max_bp[2],$min_bp[2],$sum_bp[2]/$remainQ[2],$sum_s[2]/$remainQ[2],$sum_oa[2]/$remainQ[2],$sum_Q[2]/$remainQ[2]);
+		(defined $remainQ[2])?($remainQ[2],$max_bp[2],$min_bp[2],$sum_bp[2]/$remainQ[2],
+		$sum_s[2]/$remainQ[2],$sum_oa[2]/$remainQ[2],$sum_Q[2]/$remainQ[2]):(0,0,0,0,0,0,0));
 }
 print STAT "length\tcount\n";
 foreach my $l(sort {$a<=>$b} keys %STAT){
