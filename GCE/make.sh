@@ -1,1 +1,0 @@
-R CMD SHLIB makeGC.c
