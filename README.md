@@ -3,14 +3,6 @@ This pipeline is built to ease my pressure for Multiple omics analysis. In this 
 
 # Install
 
-**Method 1 (Recommand):** 通过加载集群的[binboard](https://biogit.cn/META/Binboard#usage)配置即可直接调用。
-
-```
-echo '. /ldfssz1/ST_META/share/flow/metaEnv' >> ~/.bashrc
-```
-
-**Method 2:** 自定义配置本流程：
-
 ```
 cd /your/dir/
 clone git@biogit.cn:Fangchao/Omics_pipeline.git
