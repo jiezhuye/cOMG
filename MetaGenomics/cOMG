@@ -39,6 +39,13 @@ if($pattern eq "config"){
     `cp $RealBin/default.cfg $cwd/`;
     exit;
 }
+if ($pattern eq "cmd"){
+	print "Available core commands:\n";
+	system("ls --color $Bin/bin");
+	print "Available util commands:\n";
+	system("ls --color $Bin/util");
+	exit;
+} 
 if ($pattern !~ /^(pe|se|config|-v|-h)$/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/util/$pattern")?"$Bin/util":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';

@@ -1,37 +1,90 @@
-#!/usr/bin/perl -w
+#!/usr/bin/env perl
 use warnings;
 use strict;
 use File::Basename;
+use List::Util qw/min/;
 
-die &usage if @ARGV < 6;
 sub usage {
 	print <<USAGE;
 usage:
-se pattern:
-	perl $0 fq1 <prefix> <Qual system(33|64)> <min length> <seed OA> <fragment OA>
-e.g	perl $0 sample.fq clean 33 30 0.99 0.90
-	perl $0 sample.1.fq,sample.2.fq clean 33 30 0.99 0.90
-	perl $0 sample.1.fq,sample.2.fq clean 33 30 20 10 # PhedQ(by whole read)
+	perl OAs1 fq1 <prefix> <Qual system(33|64)> <min length> <seed OA> <fragment OA> <*stLFR> <*barcode list> <*debug>
+	perl OAs1 fq1,fq2 <prefix> <Qual system(33|64)> <min length> <seed OA> <fragment OA> <*stLFR> <*barcode list> <*debug>
+e.g	perl OAs1 sample.1.fq,sample.2.fq clean 33 30 20 10 # PhedQ(by whole read)
+		-i		input file. Use comma to specifiy paired input files
+		-pfx		output prefix
+		-Qsys	[33|64]	Quality system
+		-minLen	[0:]	Minimal allowed read length
+		-Scut	[0:50]	Threshold for seed quality
+		-Qcut	[0:50]	Threshold for fragment quality
+		-stLFR	[0|1|2]	off|on|only. whether turn on stLFR detection mode. If true, a barcode list file should be provided.
+		-pos3	[int]	Optionally defined the last position of barcode(sometime it's 132). Default is 144(start from 0);
+		-bfile		barcode list
+		-debug	[0|1]	debug off or on
 USAGE
 	exit;
 }
-sub openMethod {$_ = shift; return(($_ =~ /\.gz$/)?"pigz -dc $_|":"$_")}
-### Load accuracy table ###
-my %P2A;
-$P2A{0}= -10;
-for (my $p=1;$p<=50;$p++){
-    $P2A{$p} = log(1-10**(-$p/10))/log(10);
+
+
+## load arguments
+our ($fq,$pfx,$Qsys,$minLen,$Scut,$Qcut,$stlfr,$pos3,$bfile,$debug,$help);
+
+die &usage if !defined $ARGV[0];
+
+if($ARGV[0] =~ /^-/){
+	use Getopt::Long;
+	GetOptions(
+	"i:s"=> \$fq,
+	"pfx:s"=> \$pfx,
+	"Qsys:s"=> \$Qsys,
+	"minLen:s" => \$minLen,
+	"Scut:s" => \$Scut,
+	"Qcut:i" => \$Qcut,
+	"stlfr:s"=> \$stlfr,
+	"pos3:s" => \$pos3,
+	"bfile:s"=> \$bfile,
+	"debug:s"=> \$debug,
+	"help:s" => \$help,
+	);
+}else{
+	#Keep old argument behavior for a while
+	($fq,$pfx,$Qsys,$minLen,$Scut,$Qcut,$stlfr,$pos3,$bfile,$debug) = @ARGV;
+}
+if($help || !defined($fq || $fq || $pfx) ){
+	die &usage;
 }
 
 ### Init ###
-my ($fq,$pfx,$Qsys,$minLen,$Scut,$Qcut) = @ARGV;
+my $start_run = time();
+sub openMethod {$_ = shift; return(($_ =~ /\.gz$/)?"pigz -dc $_|":"$_")}
+### Create accuracy table ###
+my (%P2A, %BEAD_BARCODE);
+$P2A{0}= -10;
+for (my $p=1;$p<=50;$p++){
+	$P2A{$p} = log(1-10**(-$p/10))/log(10);
+}
+
+$minLen ||= 30;
+$Scut ||= 30;
+$Qcut ||= 20;
 $Qsys ||= 33;
 my @fqs = split /,/,$fq;
 my $mode= (@fqs==2)?"PE":"SE";
-
+$stlfr ||= 0;
+$pos3  ||= 144;
 ### Trasnform cutoff ###
 $Scut = ($Scut <= 1)?(log($Scut)/log(10)):($P2A{$Scut});
 $Qcut = ($Qcut <= 1)?(log($Qcut)/log(10)):($P2A{$Qcut});
+
+if($stlfr >0){
+		&stlfr_barcode_dict($bfile);
+		if($mode eq "PE"){
+			open M1,"|pigz >$pfx.stLFRmiss.1.fq.gz" or die "Output stLFRmiss 1 error:$!\n";
+			open M2,"|pigz >$pfx.stLFRmiss.2.fq.gz" or die "Output stLFRmiss 2 error:$!\n";
+		}else{
+			open M1,"|pigz >$pfx.stLFRmiss.fq.gz" or die "Output stLFRmiss error:$!\n";
+		}
+}
+our %SLOG;
 
 ### Main ###
 if($mode eq "PE"){
@@ -66,36 +119,80 @@ while(<F1>){
 		($fqID[1],$seq[1],$num[1],$qual[1])= &fqRead($l2,\*F2);
 	}
 	$total ++;
+	my ($tag,$min) = (); #init for stFLR;
 
-	# trim & filter
+	# seek barcodes, trim & filter
 	if($mode eq "PE"){
-		($Aqual[0],$PQ[0],$start[0],$len[0],$seq[0],$qual[0]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[0],$qual[0]);
-		($Aqual[1],$PQ[1],$start[1],$len[1],$seq[1],$qual[1]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[1],$qual[1]);
+		if($stlfr==0){
+			($Aqual[0],$PQ[0],$start[0],$len[0],$seq[0],$qual[0]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[0],$qual[0]);
+			($Aqual[1],$PQ[1],$start[1],$len[1],$seq[1],$qual[1]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[1],$qual[1]);
+		}elsif($stlfr==1){
+			$min = &stlfr_get_barcode_label($seq[1]);
+			($Aqual[0],$PQ[0],$start[0],$len[0],$seq[0],$qual[0]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[0],$qual[0]);
+			($Aqual[1],$PQ[1],$start[1],$len[1],$seq[1],$qual[1]) = &ca1_cut($Scut,$Qcut,$Qsys,substr($seq[1],0,100),substr($qual[1],0,100));
+			if($min == 0){
+				print M1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+				print M2 "$fqID[1]\n$seq[1]\n$num[1]\n$qual[1]\n";
+				next;
+			}
+		}elsif($stlfr==2){
+			$min = &stlfr_get_barcode_label($seq[1]);
+			($Aqual[0],$PQ[0],$start[0],$len[0]) = (1,40,0,length($seq[0]));
+			($Aqual[1],$PQ[1],$start[1],$len[1]) = (1,40,0,length($seq[1]));
+			if($min == 0){
+				print M1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+				print M2 "$fqID[1]\n$seq[1]\n$num[1]\n$qual[1]\n";
+			}else{
+				print O1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+				print O2 "$fqID[1]\n$seq[1]\n$num[1]\n$qual[1]\n";
+				&cumulate(0,0);
+				&cumulate(1,1);
+			}
+			next; # Skip filter
+		}
 		 # filter
 		if( $len[0] >= $minLen && $Aqual[0] >= $Qcut) {
 			if( $len[1] >= $minLen && $Aqual[1] >= $Qcut) {
-				print O1 "$fqID[0] length=$len[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
-				print O2 "$fqID[1] length=$len[1]\n$seq[1]\n$num[1]\n$qual[1]\n";
+				print O1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+				print O2 "$fqID[1]\n$seq[1]\n$num[1]\n$qual[1]\n";
 				&cumulate(0,0);
 				&cumulate(1,1);
 			}else{
-				print O3 "$fqID[0] length=$len[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+				print O3 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
 				&cumulate(2,0);
 			}
 		}else{
 			if( $len[1] >= $minLen && $Aqual[1] >= $Qcut) {
-				print O3 "$fqID[1] length=$len[1]\n$seq[1]\n$num[1]\n$qual[1]\n";
+				print O3 "$fqID[1]\n$seq[1]\n$num[1]\n$qual[1]\n";
 				&cumulate(2,0);
 			}
 		}
 	}else{
-		($Aqual[0],$PQ[0],$start[0],$len[0],$seq[0],$qual[0]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[0],$qual[0]);
-	    # filter
-	    if( $len[0] >= $minLen && $Aqual[0] >= $Qcut) {
-        	print O1 "$fqID[0] length=$len[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
-	        # stat
-			&cumulate(0,0);
-	    }
+		if($stlfr==0){
+			($Aqual[0],$PQ[0],$start[0],$len[0],$seq[0],$qual[0]) = &ca1_cut($Scut,$Qcut,$Qsys,$seq[0],$qual[0]);
+		}elsif($stlfr==1){
+			$min = &stlfr_get_barcode_label($seq[0]);
+			($Aqual[0],$PQ[0],$start[0],$len[0],$seq[0],$qual[0]) = &ca1_cut($Scut,$Qcut,$Qsys,substr($seq[0],0,100),substr($qual[0],0,100)); #Caution: the 100 may be changed in the furture;
+			if($min == 0){
+				print M1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+				next;
+			}
+		}elsif($stlfr==2){
+			$min = &stlfr_get_barcode_label($seq[0]);
+			if($min == 0){
+				print M1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+			}else{
+				print O1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+				&cumulate(0,0);
+			}
+			next; # Skip filter
+		}
+    # filter
+    if( $len[0] >= $minLen && $Aqual[0] >= $Qcut) {
+      	print O1 "$fqID[0]\n$seq[0]\n$num[0]\n$qual[0]\n";
+        # stat
+		&cumulate(0,0);
+    }
 	}
 }
 close F1;
@@ -105,6 +202,15 @@ if($mode eq "PE"){
 	close O2;
 	close O3;
 }
+
+if($stlfr >0){
+	close M1;
+	if($mode eq "PE"){
+		close M2;
+	}
+}
+
+#stat;
 my ($max_bp, $min_bp, $sum_bp, $sum_oa, $sum_Q, $sum_s, $remainQ) = (0, 1e9, 0, 0, 0, 0, 0);
 for(my $i=0;$i<@remainQ;$i++){
 	$max_bp  = ($max_bp > $max_bp[$i])?$max_bp:$max_bp[$i];
@@ -145,8 +251,32 @@ foreach my $l(sort {$a<=>$b} keys %STAT){
 	print STAT "$l\t$STAT{$l}\n";
 }
 close STAT;
+
+if($stlfr && $debug){
+	open DEBUG,"> $pfx.clean.debug",or die "Open debug file error:$!\n";
+	print DEBUG "offset\tHitCode\tnum\n";
+	foreach my $offset (sort {$a<=>$b} keys %{$SLOG{'hit'}}){
+		foreach my $code (sort {$a<=>$b} keys %{$SLOG{'hit'}{$offset}}){
+			print DEBUG "$offset\t$code\t$SLOG{'hit'}{$offset}{$code}\n";
+		}
+	}
+	print DEBUG "\noffset\tmissCode\tnum\n";
+	foreach my $offset (sort {$a<=>$b} keys %{$SLOG{'miss'}}){
+		foreach my $code (sort {$a<=>$b} keys %{$SLOG{'miss'}{$offset}}){
+			my $format_code = sprintf("%03d",$code);
+			print DEBUG "$offset\t$format_code\t$SLOG{'miss'}{$offset}{$code}\n";
+		}
+	}
+	close DEBUG;
+}
+
+my $end_run = time() - $start_run;
+print STDERR "Running time: $end_run sec.\n";
+
 exit;
-# sub
+################################################################################
+### Sub functions
+################################################################################
 sub fqRead {
 	my $present= shift;
 	my $handle = shift;
@@ -226,4 +356,82 @@ sub cumulate {
 	$sum_s[$n]  += $start[$m];
 	$sum_oa[$n] += $Aqual[$m];
 	$sum_Q[$n] += $PQ[$m];
+}
+
+sub stlfr_barcode_dict{
+	my $bf = shift;
+	my @base = ("A","T","G","C");
+	open BF, "<$bf" or die $!;
+	while(<BF>){
+		chomp;
+		my @read = split;
+		$BEAD_BARCODE{'origin'}{$read[0]} = $read[1];
+		for(my $i=0;$i<10;$i++){
+			foreach my $snp (@base){
+				my $mutate = substr($read[0],0,$i).$snp.substr($read[0],$i+1,9-$i);
+				my $revMut = reverse($mutate);
+				$BEAD_BARCODE{'oneSnp'}{$mutate} = $read[1];
+				$BEAD_BARCODE{'RevSnp'}{$mutate} = $read[1];
+			}
+		}
+	}
+	close BF;
+}
+
+sub stlfr_get_barcode_label{
+	my $seq = shift;
+	my(@bcodes,@blabels);
+	my %debugs = ();
+	my($try,$min,$HitScore) = (0,0,0);
+	my %missScore;
+	my @offsets = (0,-1,1,-2,2);
+	while($try<5 && $min==0){
+		my $offset = $offsets[$try];
+		$HitScore = 0;
+		@bcodes = (substr($seq,100+$offset,10), substr($seq,116+$offset,10), substr($seq,$pos3+$offset,10));
+		for(my $i=0;$i<3;$i++){
+			if(defined $BEAD_BARCODE{'origin'}{$bcodes[$i]}){
+				$blabels[$i] = $BEAD_BARCODE{'origin'}{$bcodes[$i]};
+				$HitScore += 3*10**(2-$i);
+			}elsif(defined $BEAD_BARCODE{'oneSnp'}{$bcodes[$i]}){
+				$blabels[$i] = $BEAD_BARCODE{'oneSnp'}{$bcodes[$i]};
+				$HitScore += 2*10**(2-$i);
+			}else{
+				if(defined $BEAD_BARCODE{'RevSnp'}{$bcodes[$i]}){
+					$blabels[$i] = $BEAD_BARCODE{'RevSnp'}{$bcodes[$i]};
+					$HitScore += 1*10**(2-$i);
+				}else{
+					$blabels[$i] = 0;
+				}
+			}
+		}
+		$min = min @blabels;
+		if($min == 0){
+			$missScore{$offset} += $HitScore;
+		}
+		$try ++;
+	}
+	if($min>0){
+		$try --;
+		$SLOG{'hit'}{$offsets[$try]}{sprintf("%03d",$HitScore)} ++;
+	}else{
+		foreach my $offset (sort keys %missScore){
+			$SLOG{'miss'}{$offset}{sprintf("%03d",$missScore{$offset})} ++;
+		}
+	}
+
+	my $tag = sprintf("%04d_%04d_%04d",$blabels[0],$blabels[1],$blabels[2]);
+
+	#Add tag into ID
+	if($fqID[1] && $fqID[1] =~ /\/2( |$)/){
+		$fqID[1] =~ s/\/2/\/$tag\/2/;
+	}
+
+	if($fqID[0] =~ /\/1( |$)/){
+		$fqID[0] =~ s/\/1/\/$tag\/1/;
+	}else{
+		$fqID[0] = "$fqID[0]/$tag";
+	}
+
+	return($min);
 }
