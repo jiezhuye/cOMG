@@ -1,0 +1,76 @@
+#!/usr/bin/env perl
+# (c) 2016 - 2019 Chao IN-HORSE SHARE ONLY
+# ===================================================================
+# Description:       Annotate gene profile to higher level
+# Author:            Chao | fangchao@genomics.cn
+# Version:           V0.1
+# Last modified:    20 Dec 2018 (since 20 Dec 2018)
+# ===================================================================
+# see detail below
+use strict;
+
+sub usage {
+  my $msg = shift;
+print <<USAGE;
+$msg
+usage: $0 <annotation index> <gene.prof> <output> [verbose]
+          annotation index should be the same length of gene profile
+          gene profile with header
+          output file name
+          verbose if specificed
+USAGE
+}
+&usage("[fatal] Essential input is missing") && exit if @ARGV < 3;
+
+my($REF,$index,%HASH,%ABUN,$counts);
+my $verbose = ($ARGV[3])?1:0;
+open REF,&openM($ARGV[0]) or die "can not access $ARGV[0]. $!\n";
+open AB,&openM($ARGV[1]) or die "can not access $ARGV[1]. $!\n";
+open OUT,"> $ARGV[2]" or die "can not write $ARGV[2]. $!\n";
+my $header = <AB>;
+print OUT $header;
+
+&verbose("[log] Start loading...\n");
+while(<REF>){
+	$counts ++;
+	chomp;
+	my @refs=split;
+	chomp($_=<AB>);
+	my @ab=split;
+	if($counts % 1000000 == 0){
+		&verbose("[log] Working on ID: $refs[0]\n");
+	}
+	next if $refs[1] eq "" ;
+	die "REF:$refs[0] ne AB:$ab[0]" if $refs[0] ne $ab[0];
+	for(my $s=1;$s<@ab;$s++){
+			$ABUN{$refs[1]}{$s} += $ab[$s];
+	}
+}
+close REF;
+close AB;
+
+&verbose("[log] Finish count. Start output...\n");
+foreach my $k(sort keys %ABUN){
+	print OUT $k;
+	foreach my $s(sort {$a<=>$b} keys %{$ABUN{$k}}){
+		print OUT "\t$ABUN{$k}{$s}"
+	}
+	print OUT "\n";
+}
+close OUT;
+&verbose("[log] Done!\n");
+# Main end
+exit;
+
+##############################
+### sub function
+##############################
+sub openM{
+	$_=shift;
+	return(($_=~/\.gz$/)?"pigz -dc $_|":"$_")
+};
+
+sub verbose{
+  my $msg = shift;
+  print STDERR $msg if $verbose;
+}
