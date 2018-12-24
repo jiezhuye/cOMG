@@ -4,21 +4,23 @@ This pipeline is built to ease my pressure for Multiple omics analysis. In this 
 # Install
 
 ```
-cd /your/dir/
+cd /path/to/your/dir/
 clone git@biogit.cn:Fangchao/Omics_pipeline.git
-ln -s /your/dir/Omics_pipeline/MetaGenomics/cOMG ~/bin/
+ln -s /path/to/your/dir/cOMG/cOMG ~/bin/
+# Or added to PATH
+export PATH="/path/to/your/dir/cOMG":$PATH
 ```
 
 # Usage:
 
 ```
-cOMG 		#直接执行命令可以查看使用说明
+cOMG
 usage:
         cOMG <pe|se|config|cmd> [options]
 mode
         pe|se           pair end | single end
-        config			generate a config file template
-        cmd				directely call a sub-script under bin/ or util/
+        config		generate a config file template
+        cmd		directely call a sub-script under bin/ or util/
 options:
         -p|path         :[essential]sample path file (SampleID|fqID|fqPath)
         -i|ins          :[essential for pe mode]insert info file or a number of insert size
