@@ -86,25 +86,25 @@ db_meta = $META_DB/1267sample_ICG_db/4Group_uniqGene.div_1.fa.index,$META_DB/126
 ### reference gene length file
 RGL  = $META_DB/IGC.annotation/IGC_9.9M_update.fa.len #与参考基因集匹配的每个基因的长度信息，用于计算相对丰度
 ### pipeline parameters
-PhQ = 33        		# reads Phred Quality system: 33 or 64.
-mLen= 30                # minimal read length allowance
-seedOA=20			    # OA过滤方法中，对种子部分的OA阈值（phred score,整数） [0,40]
-fragOA=10				# OA过滤方法中，对截取全长的OA阈值（phred score,整数） [0,40]
+PhQ = 33            # reads Phred Quality system: 33 or 64.
+mLen= 30            # minimal read length allowance
+seedOA=20           # OA过滤方法中，对种子部分的OA阈值（phred score,整数） [0,40]
+fragOA=10           # OA过滤方法中，对截取全长的OA阈值（phred score,整数） [0,40]
 
-qsub = 1234             #Following argment will enable only if qusb=on, otherwise you could commit it
-q   = st.q              #queue for qsub
-P   = st_ms             #Project id for qsub
-B   = 1					#全局设定投递任务的备份数
-B1  = 3					#针对第一步的任务投递备份数
-p   = 6                 #全局计算核心数
-p1  = 1					#具体到第一步的计算核心数，该参数比全局设定优先级高
-p4  = 1					#具体到第四步的计算核心数，该参数比全局设定优先级高
-f1  = 0.5G              #virtual free for qsub in step 1 (trim & filter)
-f2  = 6G                #virtual free for qsub in step 2 (remove host genes)
-f3  = 14G               #virtual free for qsub in step 3 (aligned to gene set)
-f4  = 8G                #virtual free for qsub in step 4 (calculate soap results to abundance)
-s   = 120				#qusbM定时检查任务完成情况的时间间隔（秒）
-r   = 2                #repeat time when job failed or interrupted
+qsub = 1234         #Following argment will enable only if qusb=on, otherwise you could commit it
+q   = st.q          #queue for qsub
+P   = st_ms         #Project id for qsub
+B   = 1             #全局设定投递任务的备份数
+B1  = 3             #针对第一步的任务投递备份数
+p   = 6             #全局计算核心数
+p1  = 1             #具体到第一步的计算核心数，该参数比全局设定优先级高
+p4  = 1             #具体到第四步的计算核心数，该参数比全局设定优先级高
+f1  = 0.5G          #virtual free for qsub in step 1 (trim & filter)
+f2  = 6G            #virtual free for qsub in step 2 (remove host genes)
+f3  = 14G           #virtual free for qsub in step 3 (aligned to gene set)
+f4  = 8G            #virtual free for qsub in step 4 (calculate soap results to abundance)
+s   = 120           #qusbM定时检查任务完成情况的时间间隔（秒）
+r   = 2             #repeat time when job failed or interrupted
 ```
 
 上述配置文件准备完毕后，运行本脚本可以生成工作目录：
