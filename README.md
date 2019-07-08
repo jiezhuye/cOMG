@@ -88,8 +88,8 @@ RGL  = $META_DB/IGC.annotation/IGC_9.9M_update.fa.len #与参考基因集匹配�
 ### pipeline parameters
 PhQ = 33        		# reads Phred Quality system: 33 or 64.
 mLen= 30                # minimal read length allowance
-seedOA=0.9			    # OA过滤方法中，对种子部分的OA阈值（准确率） [0,1]
-fragOA=0.8				# OA过滤方法中，对截取全长的OA阈值（准确率） [0,1]
+seedOA=20			    # OA过滤方法中，对种子部分的OA阈值（phred score,整数） [0,40]
+fragOA=10				# OA过滤方法中，对截取全长的OA阈值（phred score,整数） [0,40]
 
 qsub = 1234             #Following argment will enable only if qusb=on, otherwise you could commit it
 q   = st.q              #queue for qsub
@@ -104,7 +104,7 @@ f2  = 6G                #virtual free for qsub in step 2 (remove host genes)
 f3  = 14G               #virtual free for qsub in step 3 (aligned to gene set)
 f4  = 8G                #virtual free for qsub in step 4 (calculate soap results to abundance)
 s   = 120				#qusbM定时检查任务完成情况的时间间隔（秒）
-r   = 10                #repeat time when job failed or interrupted
+r   = 2                #repeat time when job failed or interrupted
 ```
 
 上述配置文件准备完毕后，运行本脚本可以生成工作目录：
