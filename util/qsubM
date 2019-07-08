@@ -209,7 +209,7 @@ sub failed_job_reRun{
 				my $jbID = $1;
 				print DEBUG "$logTime\t$jbname\t$jbID\tTask re-submitted";
 				for(my $j=0;$j<$OPT{'TD'};$j++){
-					if(exists $UNDONE{$OPT{'N'}}{$j}{'num'}){
+					if(exists $UNDONE{$OPT{'N'}}{$j}{'num'}&&$UNDONE{$OPT{'N'}}{$j}{'num'}>0){
 						`qhold $jbID`;
 						print DEBUG " & HOLD";
 						last;
