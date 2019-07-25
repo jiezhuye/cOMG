@@ -20,7 +20,7 @@ my @head;
 #shift @head;
 while (<IN>) { 
 	chomp;
-	my @s = split /\s+/;
+	my @s = split /\t+/;
 	if($.==1){
 		my $test = (defined $row)?$s[$row]:$s[1];
 		if($test =~/\D/ && $test !~ /e-/){
