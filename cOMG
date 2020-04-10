@@ -45,7 +45,7 @@ if ($pattern eq "cmd"){
 	print "Available util commands:\n";
 	system("ls --color $Bin/util");
 	exit;
-} 
+}
 if ($pattern !~ /^(pe|se|config|-v|-h)$/){
 	my $path = ( -e "$Bin/bin/$pattern")?"$Bin/bin":( -e "$Bin/util/$pattern")?"$Bin/util":"No such script!.";
     my $int = ($pattern=~/\.pl$/)?'perl ':($pattern=~/\.[Rr]$/)?'Rscript ':'';
@@ -135,8 +135,13 @@ my @paths = split (',',$path_f);
 open PATH,"> $out_dir/sam.id.path" or die $!;
 while(@paths>0){
 	my $path_i = shift @paths;
-	$path_i = abs_path($path_i);
-	open IN,"<$path_i" or die "can not open $path_i, $!\n";
+	if($path_i =~/|-/){
+		open IN,"< -" or die "can not open $path_i, $!\n";
+	}else{
+		$path_i = abs_path($path_i);
+		open IN,"<$path_i" or die "can not open $path_i, $!\n";
+	}
+
 	while (<IN>){
 		print PATH $_ ;
 		chomp;
