@@ -52,7 +52,7 @@ while(<IS>){
 	my $cmd;
 	$OPT{'TD'} ||= 0;
 	$job_seq ++;
-	if($_ =~ /=/){
+	if($_ =~ /^(\w+)=/){
 		my @opts = split();
 		while($opts[0] =~ /^(\S+)=(\S+)$/){
 			$OPT{$1} = $2;
