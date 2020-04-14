@@ -52,7 +52,7 @@ while(<IS>){
 	my $cmd;
 	$OPT{'TD'} ||= 0;
 	$job_seq ++;
-	if($_ =~ /=/){
+	if($_ =~ /^(\w+)=/){
 		my @opts = split();
 		while($opts[0] =~ /^(\S+)=(\S+)$/){
 			$OPT{$1} = $2;
@@ -79,7 +79,7 @@ while(<IS>){
 	$JBs{$OPT{'N'}}{$OPT{'TD'}}{$job_seq}{'opt'}.= "-q $OPT{'q'} -P $OPT{'P'} ";
 
 	open  OUTS,">$qsubDir/$JBname.sh" or die "can\'t open split shell: $qsubDir/$JBname.sh\n";
-	print OUTS "$cmd\n[ \$? -eq 0 ] && echo this-work-is-complete\n";
+	print OUTS "$cmd\n[ \$? -eq 0 ] && echo -e \"\\nthis-work-is-complete\"\n";
 	close OUTS;
 	$allJobs[$job_seq] = join(" ",$OPT{'N'},$OPT{'TD'},$OPT{'B'});
 }

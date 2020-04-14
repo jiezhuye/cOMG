@@ -16,6 +16,7 @@ print OUT $heads;
 
 while(<KO>){
 	chomp;
+	$_ =~ s/;/\t/g;
 	my @ko=split;
 	chomp($_=<AB>);
 	my @ab=split;
