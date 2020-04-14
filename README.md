@@ -4,9 +4,9 @@ This pipeline is built to ease my pressure for Multiple omics analysis. In this 
 # Install
 
 ```
-cd /your/dir/
-clone git@biogit.cn:Fangchao/Omics_pipeline.git
-ln -s /your/dir/Omics_pipeline/MetaGenomics/cOMG ~/bin/
+cd $cwd
+clone git@biogit.cn:PUB/cOMG.git
+ln -s $cwd/cOMG/cOMG ~/bin/
 ```
 
 # Usage:
