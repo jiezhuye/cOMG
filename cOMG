@@ -135,7 +135,7 @@ my @paths = split (',',$path_f);
 open PATH,"> $out_dir/sam.id.path" or die $!;
 while(@paths>0){
 	my $path_i = shift @paths;
-	if($path_i =~/|-/){
+	if($path_i =~/^(|-)$/){
 		open IN,"< -" or die "can not open $path_i, $!\n";
 	}else{
 		$path_i = abs_path($path_i);
